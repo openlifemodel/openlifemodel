@@ -116,6 +116,9 @@ adjustment:
         - {min: 25, hazard_ratio: 1.2, prevalence: 0.68}
 ```
 
+- `label` is a short display name of at most 40 characters. Implementations
+  describe levels themselves from the input's standard name and unit, so
+  model authors never need to supply level wording.
 - **categorical** factors list one `level` per allowed input value.
 - **banded** factors divide a numeric input into contiguous ranges. A value
   `x` falls in the band where `min ≤ x < max`.

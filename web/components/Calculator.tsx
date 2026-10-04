@@ -686,17 +686,20 @@ function describeLevels(input: FactorInput, levels: FactorLevel[]): string {
 
 const signed = (y: number) => `${y >= 0 ? "+" : "−"}${fmt(Math.abs(y))} y`;
 
-/** The note under a factor: how close to the best level, phrased for what can still change. */
-function factorNote(f: FactorResult, quitNow: number | null): { text: string; good: boolean } {
-  const atBest = f.life_years >= f.best_life_years - 0.05;
-  if (f.input === "smoking_status" && f.value !== "never") {
-    if (f.value === "current" && quitNow !== null) {
-      return { text: `Quitting now: about ${signed(quitNow - f.life_years)}`, good: true };
+/**
+ * The note under a factor: "Best +X y with …". For smoking, "best" is the best
+ * still open to this person: past smoking cannot be undone, so a current smoker's
+ * best is quitting now and a former smoker's is their actual quit age.
+ */
+function factorNote(f: FactorResult, quitNow: number | null): string {
+  if (f.input === "smoking_status") {
+    if (f.value === "current" && quitNow !== null) return `Best ${signed(quitNow)} with quitting now`;
+    if (f.value === "former") return `Best ${signed(f.life_years)} with having quit`;
+    if (typeof f.value === "string" && f.value !== "current") {
+      return `Best ${signed(f.life_years)} with ${(LEVEL_LABELS[f.value] ?? f.value).toLowerCase()}`;
     }
-    return { text: "Set by the age you quit", good: false };
   }
-  if (atBest) return { text: "At the best level in this model", good: true };
-  return { text: `Best ${signed(f.best_life_years)} with ${describeLevels(f.input, f.best_levels)}`, good: false };
+  return `Best ${signed(f.best_life_years)} with ${describeLevels(f.input, f.best_levels)}`;
 }
 
 function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: number | null }) {
@@ -718,7 +721,9 @@ function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: nu
           return (
             <li key={f.id} className="text-sm">
               <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                <span className="font-medium">{f.label}</span>
+                <span className="min-w-0 truncate font-medium" title={f.label}>
+                  {f.label}
+                </span>
                 <span className={`font-semibold tabular-nums ${good ? "text-good" : "text-bad"}`}>{signed(f.life_years)}</span>
               </div>
               <div className="relative h-3" aria-hidden="true">
@@ -739,7 +744,7 @@ function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: nu
               </div>
               <div className="mt-1.5 flex justify-between gap-3 text-xs text-faint">
                 <span>Worst {signed(f.worst_life_years)}</span>
-                <span className={`text-right ${note.good ? "font-medium text-good" : "text-muted"}`}>{note.text}</span>
+                <span className="text-right text-muted">{note}</span>
               </div>
             </li>
           );
