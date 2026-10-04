@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     "Estimate life expectancy with open, inspectable survival models. Change the assumptions, compare models and export them as open model files. Runs entirely in your browser.",
   alternates: { canonical: "/" },
   openGraph: { siteName: "OpenLifeModel", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
@@ -28,16 +29,11 @@ export const viewport: Viewport = {
 
 function Logo() {
   return (
-    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="var(--accent)" />
-      <path
-        d="M6 9c6 0 9 1.5 12 6s5 8 8 8"
-        fill="none"
-        stroke="var(--accent-contrast)"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-      <circle cx="18.2" cy="15.2" r="2.4" fill="var(--accent-contrast)" />
+    <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" rx="15" fill="#0d9488" />
+      <path d="M12 18 C 26 18, 31 20, 36 31 S 44 46, 52 46 L 52 50 L 12 50 Z" fill="#ffffff" fillOpacity="0.24" />
+      <path d="M12 18 C 26 18, 31 20, 36 31 S 44 46, 52 46" fill="none" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="36" cy="31" r="5" fill="#ffffff" />
     </svg>
   );
 }

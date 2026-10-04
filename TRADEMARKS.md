@@ -17,5 +17,8 @@ Please do not:
   similar name or logo.
 - Imply that your service is the official OpenLifeModel or is endorsed by it.
 
-If you fork the reference app and host it publicly, give it a different name.
+If you fork the reference app and host it publicly, give it a different name
+and replace the logo files (`brand/`, `web/app/favicon.ico`, `web/app/icon.svg`,
+`web/app/apple-icon.png`, `web/app/opengraph-image.png` and
+`web/public/icon-*.png`). See [brand/README.md](brand/README.md).
 Questions: info@openlifemodel.com.
