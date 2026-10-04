@@ -116,6 +116,9 @@ adjustment:
         - {min: 25, hazard_ratio: 1.2, prevalence: 0.68}
 ```
 
+- `label` is a short display name of at most 40 characters. Implementations
+  describe levels themselves from the input's standard name and unit, so
+  model authors never need to supply level wording.
 - **categorical** factors list one `level` per allowed input value.
 - **banded** factors divide a numeric input into contiguous ranges. A value
   `x` falls in the band where `min ≤ x < max`.
@@ -181,6 +184,9 @@ Given a model and a profile with age `a` and sex `s`:
 8. **Factor contribution** in life-years is `e` minus the remaining life
    expectancy recomputed with that factor's HR set to 1. Contributions are
    not additive: they need not sum to the total difference from the baseline.
+   Implementations MAY also report each factor's best and worst possible
+   contribution: the same quantity computed for every level of the factor,
+   with the other factors unchanged.
 
 With no adjustment (`H = 1`), this reproduces a standard life table's life
 expectancy. The bundled US SSA 2023 model matches SSA's published values to

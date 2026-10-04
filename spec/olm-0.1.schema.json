@@ -287,8 +287,10 @@
           "$ref": "#/$defs/localId"
         },
         "label": {
+          "description": "Short display name, e.g. \"Smoking\".",
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 40
         },
         "input": {
           "description": "PersonProfile field this factor reads.",

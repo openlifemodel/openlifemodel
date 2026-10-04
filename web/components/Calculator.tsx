@@ -9,9 +9,12 @@ import {
   validateModel,
   type CalculationResult,
   type FactorInput,
+  type FactorLevel,
+  type FactorResult,
   type OlmModel,
   type PersonProfile,
 } from "@openlifemodel/engine";
+import { LEVEL_LABELS } from "@/lib/labels";
 import { ModelEditor } from "./ModelEditor";
 import { SurvivalChart } from "./SurvivalChart";
 
@@ -221,13 +224,17 @@ export function Calculator({ models }: { models: OlmModel[] }) {
     }
   }, [model, entry?.origin]);
 
-  const outcome = useMemo((): { result: CalculationResult; population: CalculationResult } | { errors: string[] } => {
+  const outcome = useMemo((): Outcome | { errors: string[] } => {
     if (!model) return { errors: ["No model selected."] };
     try {
-      return {
-        result: calculate(model, profile),
-        population: calculate(model, { age: profile.age, sex: profile.sex }),
-      };
+      const result = calculate(model, profile);
+      // For current smokers, what quitting now would do (the quit-age band for their age).
+      let quitNow: number | null = null;
+      if (profile.smoking_status === "current" && usedInputs.has("smoking_status")) {
+        const quitting = calculate(model, { ...profile, smoking_status: quitBandFor(profile.age) });
+        quitNow = quitting.factors.find((f) => f.input === "smoking_status")?.life_years ?? null;
+      }
+      return { result, population: calculate(model, { age: profile.age, sex: profile.sex }), quitNow };
     } catch (err) {
       return { errors: errorText(err) };
     }
@@ -455,7 +462,12 @@ export function Calculator({ models }: { models: OlmModel[] }) {
                 </ul>
               </div>
             ) : (
-              <Results result={outcome.result} population={outcome.population} who={`${profile.age}-year-old ${sexWord}`} />
+              <Results
+              result={outcome.result}
+              population={outcome.population}
+              quitNow={outcome.quitNow}
+              who={`${profile.age}-year-old ${sexWord}`}
+            />
             )}
           </div>
         </section>
@@ -562,10 +574,22 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   );
 }
 
-function Results({ result, population, who }: { result: CalculationResult; population: CalculationResult; who: string }) {
+interface Outcome {
+  result: CalculationResult;
+  population: CalculationResult;
+  quitNow: number | null;
+}
+
+function quitBandFor(age: number): NonNullable<PersonProfile["smoking_status"]> {
+  if (age < 35) return "former_quit_before_35";
+  if (age < 45) return "former_quit_35_44";
+  if (age < 55) return "former_quit_45_54";
+  return "former_quit_55_plus";
+}
+
+function Results({ result, population, quitNow, who }: Outcome & { who: string }) {
   const diff = result.remaining_life_expectancy - population.remaining_life_expectancy;
   const factors = result.factors.filter((f) => f.value !== null);
-  const maxYears = Math.max(...factors.map((f) => Math.abs(f.life_years)), 1);
 
   return (
     <div className="space-y-6">
@@ -628,39 +652,108 @@ function Results({ result, population, who }: { result: CalculationResult; popul
         })}
       </div>
 
-      {factors.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold">What moves your estimate</h3>
-          <ul className="space-y-3">
-            {factors.map((f) => (
-              <li key={f.id} className="grid grid-cols-[7.5rem_1fr_4.5rem] items-center gap-3 text-sm">
-                <span className="truncate text-muted">{f.label}</span>
-                <span className="relative h-2.5 rounded-full bg-surface-2" aria-hidden="true">
-                  <span className="absolute inset-y-0 left-1/2 w-px bg-line-strong" />
-                  <span
-                    className={`absolute inset-y-0 rounded-full ${f.life_years >= 0 ? "left-1/2 bg-good" : "right-1/2 bg-bad"}`}
-                    style={{ width: `${(Math.abs(f.life_years) / maxYears) * 50}%` }}
-                  />
-                </span>
-                <span className={`text-right font-semibold tabular-nums ${f.life_years >= 0 ? "text-good" : "text-bad"}`}>
-                  {f.life_years >= 0 ? "+" : "−"}
-                  {fmt(Math.abs(f.life_years))} y
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="hint">
-            Years gained or lost compared with an average value for each factor. They don&apos;t add up exactly because
-            risks multiply.
-          </p>
-        </div>
-      )}
+      {factors.length > 0 && <FactorList factors={factors} quitNow={quitNow} />}
 
       {result.warnings.length > 0 && (
         <p className="text-xs leading-relaxed text-faint">
           Not answered, so treated as average: {result.warnings.map((w) => w.split(":")[0]).join(", ")}.
         </p>
       )}
+    </div>
+  );
+}
+
+const UNIT_PHRASES: Partial<Record<FactorInput, (range: string) => string>> = {
+  bmi: (r) => `BMI ${r}`,
+  mvpa_minutes_per_week: (r) => `${r} min/week`,
+  systolic_bp: (r) => `${r} mmHg`,
+  alcohol_drinks_per_week: (r) => `${r} drinks/week`,
+};
+
+/** "never smoked or quit before 35", "450–1,500 min/week", "BMI 18.5–25". */
+function describeLevels(input: FactorInput, levels: FactorLevel[]): string {
+  if (levels.every((l) => typeof l === "string")) {
+    return (levels as string[]).map((l) => (LEVEL_LABELS[l] ?? l).toLowerCase()).join(" or ");
+  }
+  // Adjacent bands with the same effect read better as one range.
+  const bands = levels.filter((l): l is { min?: number; max?: number } => typeof l !== "string");
+  const min = bands[0]?.min;
+  const max = bands[bands.length - 1]?.max;
+  const n = (x: number) => x.toLocaleString("en-US");
+  const range = min === undefined ? `under ${n(max ?? 0)}` : max === undefined ? `${n(min)} or more` : `${n(min)}–${n(max)}`;
+  return UNIT_PHRASES[input]?.(range) ?? range;
+}
+
+const signed = (y: number) => `${y >= 0 ? "+" : "−"}${fmt(Math.abs(y))} y`;
+
+/**
+ * The note under a factor: "Best +X y with …". For smoking, "best" is the best
+ * still open to this person: past smoking cannot be undone, so a current smoker's
+ * best is quitting now and a former smoker's is their actual quit age.
+ */
+function factorNote(f: FactorResult, quitNow: number | null): string {
+  if (f.input === "smoking_status") {
+    if (f.value === "current" && quitNow !== null) return `Best ${signed(quitNow)} with quitting now`;
+    if (f.value === "former") return `Best ${signed(f.life_years)} with having quit`;
+    if (typeof f.value === "string" && f.value !== "current") {
+      return `Best ${signed(f.life_years)} with ${(LEVEL_LABELS[f.value] ?? f.value).toLowerCase()}`;
+    }
+  }
+  return `Best ${signed(f.best_life_years)} with ${describeLevels(f.input, f.best_levels)}`;
+}
+
+function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: number | null }) {
+  // One shared scale so factors can be compared: worst possible to best possible.
+  const lo = Math.min(0, ...factors.map((f) => f.worst_life_years));
+  const hi = Math.max(0, ...factors.map((f) => f.best_life_years));
+  const pos = (y: number) => `${((y - lo) / (hi - lo || 1)) * 100}%`;
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold">What moves your estimate</h3>
+      <p className="hint !mt-1 mb-4">
+        Years gained or lost compared with an average person, and the full range each factor can span in this model.
+      </p>
+      <ul className="space-y-4">
+        {factors.map((f) => {
+          const note = factorNote(f, quitNow);
+          const good = f.life_years >= 0;
+          return (
+            <li key={f.id} className="text-sm">
+              <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                <span className="min-w-0 truncate font-medium" title={f.label}>
+                  {f.label}
+                </span>
+                <span className={`font-semibold tabular-nums ${good ? "text-good" : "text-bad"}`}>{signed(f.life_years)}</span>
+              </div>
+              <div className="relative h-3" aria-hidden="true">
+                <div className="absolute inset-y-1 inset-x-0 rounded-full bg-surface-2" />
+                <div
+                  className="absolute inset-y-1 rounded-full bg-[color-mix(in_srgb,var(--border-strong)_70%,transparent)]"
+                  style={{ left: pos(f.worst_life_years), width: `calc(${pos(f.best_life_years)} - ${pos(f.worst_life_years)})` }}
+                />
+                <div
+                  className={`absolute inset-y-1 rounded-full ${good ? "bg-good" : "bg-bad"}`}
+                  style={good ? { left: pos(0), width: `calc(${pos(f.life_years)} - ${pos(0)})` } : { left: pos(f.life_years), width: `calc(${pos(0)} - ${pos(f.life_years)})` }}
+                />
+                <div className="absolute inset-y-0 w-px bg-faint" style={{ left: pos(0) }} />
+                <div
+                  className={`absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface ${good ? "bg-good" : "bg-bad"}`}
+                  style={{ left: pos(f.life_years) }}
+                />
+              </div>
+              <div className="mt-1.5 flex justify-between gap-3 text-xs text-faint">
+                <span>Worst {signed(f.worst_life_years)}</span>
+                <span className="text-right text-muted">{note}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="hint mt-4">
+        Ranges hold your other answers fixed. Effects don&apos;t add up exactly because risks multiply, and these
+        are associations from studies, not guarantees for any one person.
+      </p>
     </div>
   );
 }
