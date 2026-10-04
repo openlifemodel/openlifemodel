@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import type { OlmModel } from "@openlifemodel/engine";
+import type { OlmModel, PersonProfile } from "@openlifemodel/engine";
+import type { LibraryTable } from "@/lib/life-tables";
 import { syncLevels, type EditorTab, type Problem } from "@/lib/draft-model";
 import { FactorsTab } from "./FactorsTab";
 import { FileTab } from "./FileTab";
+import { LifeTableTab } from "./LifeTableTab";
 import { OverviewTab } from "./OverviewTab";
 import { QuestionsTab } from "./QuestionsTab";
 import { SourcesTab } from "./SourcesTab";
+import { TestsTab, testStatus } from "./TestsTab";
 
 const TABS: { id: EditorTab; label: string }[] = [
   { id: "factors", label: "Risk factors" },
   { id: "questions", label: "Questions" },
+  { id: "lifetable", label: "Life table" },
   { id: "overview", label: "Overview" },
   { id: "sources", label: "Sources & assumptions" },
+  { id: "tests", label: "Tests" },
   { id: "file", label: "File" },
 ];
 
@@ -25,6 +30,8 @@ export function ModelEditorPanel({
   onImport,
   onReset,
   canReset,
+  library,
+  currentProfile,
 }: {
   model: OlmModel;
   problems: Problem[];
@@ -33,6 +40,8 @@ export function ModelEditorPanel({
   onImport: () => void;
   onReset: () => void;
   canReset: boolean;
+  library: LibraryTable[];
+  currentProfile: PersonProfile | null;
 }) {
   const [tab, setTab] = useState<EditorTab>("factors");
 
@@ -43,7 +52,10 @@ export function ModelEditorPanel({
     onChange(syncLevels(next));
   };
 
-  const count = (t: EditorTab) => problems.filter((p) => p.tab === t).length;
+  // Tests run only on a valid model; ones that no longer match block downloading.
+  const canRun = problems.length === 0;
+  const failingTests = canRun ? testStatus(model).failing.size : 0;
+  const count = (t: EditorTab) => problems.filter((p) => p.tab === t).length + (t === "tests" ? failingTests : 0);
 
   return (
     <section id="model-editor" className="card scroll-mt-20 p-5 sm:p-6" aria-labelledby="editor-heading">
@@ -105,12 +117,19 @@ export function ModelEditorPanel({
         {tab === "overview" && <OverviewTab model={model} edit={edit} />}
         {tab === "factors" && <FactorsTab model={model} edit={edit} />}
         {tab === "questions" && <QuestionsTab model={model} edit={edit} />}
+        {tab === "lifetable" && <LifeTableTab model={model} edit={edit} library={library} />}
         {tab === "sources" && <SourcesTab model={model} edit={edit} />}
-        {tab === "file" && <FileTab model={model} valid={problems.length === 0} onDownload={onDownload} onImport={onImport} />}
+        {tab === "tests" && <TestsTab model={model} edit={edit} currentProfile={currentProfile} canRun={canRun} />}
+        {tab === "file" && (
+          <FileTab
+            model={model}
+            valid={canRun && failingTests === 0}
+            blocker={!canRun ? "Fix the problems listed above to download." : failingTests > 0 ? "Some reference tests no longer match; update or remove them on the Tests tab." : null}
+            onDownload={onDownload}
+            onImport={onImport}
+          />
+        )}
       </div>
-      <p className="mt-6 text-xs text-faint">
-        Coming next: editing the life table itself, and saving your current results as reference tests.
-      </p>
     </section>
   );
 }

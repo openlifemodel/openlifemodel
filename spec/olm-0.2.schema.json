@@ -149,6 +149,11 @@
         "source": {
           "$ref": "#/$defs/localId"
         },
+        "region": {
+          "description": "Where the table's population lives: an ISO 3166-1 alpha-2 country code (e.g. \"US\"). Population shares in the model should describe the same population.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
         "start_age": {
           "type": "integer",
           "minimum": 0
@@ -213,6 +218,13 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "origin": {
+            "description": "Where the expected values came from. published: reported by the source itself (strongest check). reference-engine: computed by an OLM implementation and pinned (regression check).",
+            "enum": [
+              "published",
+              "reference-engine"
+            ]
           },
           "profile": {
             "type": "object"

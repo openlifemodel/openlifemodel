@@ -30,6 +30,7 @@ sources:
 baseline:
   type: period-life-table
   source: ssa-2023
+  region: US
   start_age: 0
   qx:
     male: [
@@ -62,50 +63,62 @@ baseline:
     ]
 tests:
   - name: SSA published life expectancy, male aged 0
+    origin: published
     profile: {age: 0, sex: male}
     expect:
       remaining_life_expectancy: {value: 75.79, tolerance: 0.02}
   - name: SSA published life expectancy, male aged 20
+    origin: published
     profile: {age: 20, sex: male}
     expect:
       remaining_life_expectancy: {value: 56.69, tolerance: 0.02}
   - name: SSA published life expectancy, male aged 40
+    origin: published
     profile: {age: 40, sex: male}
     expect:
       remaining_life_expectancy: {value: 38.59, tolerance: 0.02}
   - name: SSA published life expectancy, male aged 65
+    origin: published
     profile: {age: 65, sex: male}
     expect:
       remaining_life_expectancy: {value: 18.12, tolerance: 0.02}
   - name: SSA published life expectancy, male aged 80
+    origin: published
     profile: {age: 80, sex: male}
     expect:
       remaining_life_expectancy: {value: 8.50, tolerance: 0.02}
   - name: SSA published life expectancy, male aged 100
+    origin: published
     profile: {age: 100, sex: male}
     expect:
       remaining_life_expectancy: {value: 2.04, tolerance: 0.05}
   - name: SSA published life expectancy, female aged 0
+    origin: published
     profile: {age: 0, sex: female}
     expect:
       remaining_life_expectancy: {value: 81.06, tolerance: 0.02}
   - name: SSA published life expectancy, female aged 20
+    origin: published
     profile: {age: 20, sex: female}
     expect:
       remaining_life_expectancy: {value: 61.74, tolerance: 0.02}
   - name: SSA published life expectancy, female aged 40
+    origin: published
     profile: {age: 40, sex: female}
     expect:
       remaining_life_expectancy: {value: 42.64, tolerance: 0.02}
   - name: SSA published life expectancy, female aged 65
+    origin: published
     profile: {age: 65, sex: female}
     expect:
       remaining_life_expectancy: {value: 20.66, tolerance: 0.02}
   - name: SSA published life expectancy, female aged 80
+    origin: published
     profile: {age: 80, sex: female}
     expect:
       remaining_life_expectancy: {value: 9.82, tolerance: 0.02}
   - name: SSA published life expectancy, female aged 100
+    origin: published
     profile: {age: 100, sex: female}
     expect:
       remaining_life_expectancy: {value: 2.23, tolerance: 0.05}
