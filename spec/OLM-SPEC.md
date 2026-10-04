@@ -1,4 +1,4 @@
-# OLM Specification 0.1 (draft)
+# OLM Specification 0.2 (draft)
 
 Status: **draft**. Expect breaking changes before 1.0.
 Licence: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/).
@@ -17,8 +17,10 @@ The key words MUST, SHOULD and MAY are used as in RFC 2119.
 - **Reproducible.** The calculation is fully specified (section 6) and every
   model can carry reference test cases (section 7).
 - **Transparent.** Every number points to a source.
-- **Small.** 0.1 supports one model type. Further types are added only when a
+- **Small.** 0.2 supports one model type. Further types are added only when a
   real model needs them.
+- **Extensible.** Models can declare their own inputs (section 3.1), so a new
+  risk factor does not have to wait for a new version of this specification.
 
 ## 2. Files
 
@@ -26,14 +28,16 @@ The key words MUST, SHOULD and MAY are used as in RFC 2119.
 - Files SHOULD use the extension `.olm.yaml`. Implementations SHOULD also
   accept `.olm`, but must check the content: Outlook for Mac uses `.olm` for
   unrelated mailbox archives.
-- It MUST validate against [`olm-0.1.schema.json`](olm-0.1.schema.json) and
+- It MUST validate against [`olm-0.2.schema.json`](olm-0.2.schema.json) and
   satisfy the additional rules in section 5.
+- `olm` is `"0.2"`. Files written for 0.1 (`olm: "0.1"`) remain valid: 0.2
+  only adds custom inputs.
 - Media type (provisional): `application/vnd.openlifemodel+yaml`.
 
 ## 3. The person profile
 
 Models read inputs from a **PersonProfile**, defined by
-[`person-profile-0.1.schema.json`](person-profile-0.1.schema.json):
+[`person-profile-0.2.schema.json`](person-profile-0.2.schema.json):
 
 | Field | Type | Unit / values | Required |
 | --- | --- | --- | --- |
@@ -44,16 +48,52 @@ Models read inputs from a **PersonProfile**, defined by
 | `systolic_bp` | number 60–260 | mmHg | no |
 | `mvpa_minutes_per_week` | number 0–5000 | leisure-time moderate-equivalent minutes (vigorous minutes count twice) | no |
 | `alcohol_drinks_per_week` | number 0–200 | standard drinks (≈14 g ethanol) | no |
+| `custom` | object | answers to custom inputs, keyed by input `id` | no |
 
-Fields have fixed names and units, so the same profile can be run through any
-model. New fields are added in later versions of the profile schema; a profile
-MUST NOT contain fields that the schema does not define.
+Standard fields have fixed names and units, so the same profile can be run
+through any model. A profile MUST NOT contain other top-level fields.
+
+### 3.1 Custom inputs
+
+A model MAY declare inputs that are not in the standard profile, for example
+air pollution exposure or a study's own smoking categories:
+
+```yaml
+inputs:
+  - id: pm25                       # lowercase, digits and underscores
+    label: Air pollution           # at most 40 characters
+    question: Average PM2.5 where you live   # at most 80
+    help: Your city's annual average is on its air quality website.  # at most 240
+    type: number
+    unit: µg/m³                    # at most 16
+    min: 0
+    max: 200
+  - id: commute
+    label: Commute
+    type: choice
+    choices:
+      - {value: car, label: Car}
+      - {value: active, label: Walk or cycle}
+```
+
+- `type: number` inputs MUST give `unit`, `min` and `max` (and MAY give
+  `step`); `type: choice` inputs MUST give 2 to 12 `choices`.
+- A custom input MUST NOT reuse the id of a standard field, and every declared
+  input MUST be used by a factor.
+- Answers go in the profile's `custom` object, e.g. `custom: {pm25: 8.5}`. An
+  implementation MUST reject answers outside `min`/`max`, choices that are not
+  listed, and answers to inputs the model does not declare.
+- Implementations display custom inputs from the declaration. Text limits keep
+  questions short enough for a form on a phone.
+- Custom inputs are model-specific: two models may use the same id for
+  different things. When a custom input becomes widely used, it should be
+  proposed as a standard field so that models using it can be compared.
 
 ## 4. Model file structure
 
 | Key | Required | Meaning |
 | --- | --- | --- |
-| `olm` | yes | Spec version, `"0.1"`. |
+| `olm` | yes | Spec version, `"0.2"` (`"0.1"` is still accepted). |
 | `id` | yes | Stable identifier (lowercase, digits, hyphens). |
 | `name`, `description` | yes | Human-readable name and summary. |
 | `version` | yes | Semantic version of the model. Changing any number is at least a minor version. |
@@ -62,6 +102,7 @@ MUST NOT contain fields that the schema does not define.
 | `authors` | yes | List of `{name, url?, orcid?}`. |
 | `population` | no | Who the model is intended for. |
 | `assumptions` | no | Plain-language list of assumptions. |
+| `inputs` | no | Custom inputs the model asks for (section 3.1). |
 | `sources` | yes | List of `{id, citation, doi?, url?, license?, notes?}`, referenced by `id` elsewhere. |
 | `baseline` | yes | Baseline mortality (section 4.1). |
 | `adjustment` | no | Personal adjustments (section 4.2). Without it, the model is the baseline. |
@@ -69,7 +110,7 @@ MUST NOT contain fields that the schema does not define.
 
 ### 4.1 Baseline
 
-0.1 supports one baseline type, `period-life-table`:
+0.2 supports one baseline type, `period-life-table`:
 
 ```yaml
 baseline:
@@ -86,7 +127,7 @@ baseline:
 
 ### 4.2 Adjustment
 
-0.1 supports `proportional-hazards`: each **factor** maps one profile input to
+0.2 supports `proportional-hazards`: each **factor** maps one profile input to
 a hazard ratio (HR), and the person's hazard at every age is the baseline
 hazard multiplied by the product of the factors' HRs.
 
@@ -104,6 +145,7 @@ adjustment:
       levels:                         # one per allowed value (abridged here)
         - {value: never,   hazard_ratio: 1.0, prevalence: 0.58}
         - {value: former_quit_45_54, hazard_ratio: 1.5, prevalence: 0.04}
+        # (other quit-age levels omitted here)
         - {value: current, hazard_ratio: 2.9, prevalence: 0.17}
     - id: bmi
       label: Body mass index
@@ -136,7 +178,7 @@ adjustment:
     tell the user.
   - `required`: if the input is absent, the calculation MUST fail.
 
-**Limitation (0.1):** factors multiply independently. When factors are
+**Limitation (0.2):** factors multiply independently. When factors are
 correlated (for example BMI and blood pressure), multiplying HRs from
 separate studies double-counts their shared effect. Model authors SHOULD use
 mutually adjusted HRs where available and MUST state the issue in
@@ -151,14 +193,18 @@ A valid model MUST also satisfy:
    unique.
 2. All `baseline.qx` tables have the same length.
 3. Factor `id`s are unique, and no two factors read the same input.
-4. `smoking_status` factors are `categorical` and list exactly the values
-   allowed by the PersonProfile schema; numeric inputs use `banded` factors.
+4. A factor's `input` is a standard field or a declared custom input. Choice
+   inputs (`smoking_status`, custom `choice` inputs) use `categorical` factors
+   that list exactly one level per allowed value; numeric inputs use `banded`
+   factors.
 5. Bands are in ascending order. Only the first band omits `min` and only the
    last omits `max`. Each band's `max` equals the next band's `min`.
 6. With `population-average` normalization, every level or band has a
    `prevalence`, and each factor's prevalences sum to 1 (±0.011, to allow
    for rounding).
-7. Every test profile is a valid PersonProfile.
+7. Every test profile is a valid PersonProfile, and its `custom` answers are
+   valid for the model.
+8. Custom inputs follow the rules in section 3.1.
 
 ## 6. Calculation
 
@@ -203,7 +249,7 @@ tests:
       survival_to_90: {value: 0.4509, tolerance: 0.0001}
 ```
 
-An implementation conforms to OLM 0.1 for a model if every expected output
+An implementation conforms to OLM 0.2 for a model if every expected output
 lies within `tolerance` of its computed value. Supported outputs:
 `remaining_life_expectancy`, `median_age_at_death`, `survival_to_80`,
 `survival_to_90`, `survival_to_100` and `combined_hazard_ratio`.

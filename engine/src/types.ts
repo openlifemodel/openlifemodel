@@ -18,9 +18,32 @@ export interface PersonProfile {
   systolic_bp?: number;
   mvpa_minutes_per_week?: number;
   alcohol_drinks_per_week?: number;
+  /** Answers to custom inputs declared by a model, keyed by input id. */
+  custom?: Record<string, number | string>;
 }
 
-export type FactorInput = Exclude<keyof PersonProfile, "age" | "sex">;
+/** A standard PersonProfile field that factors may read. */
+export type StandardInput = Exclude<keyof PersonProfile, "age" | "sex" | "custom">;
+/** A standard input, or the id of a custom input declared by the model. */
+export type FactorInput = string;
+
+export interface CustomInput {
+  id: string;
+  label: string;
+  question?: string;
+  help?: string;
+  type: "number" | "choice";
+  unit?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  choices?: { value: string; label: string }[];
+}
+
+/** Resolved description of an input, standard or custom. */
+export type InputInfo =
+  | { id: string; standard: boolean; type: "number"; min: number; max: number; declaration?: CustomInput }
+  | { id: string; standard: boolean; type: "choice"; values: string[]; declaration?: CustomInput };
 
 export interface Source {
   id: string;
@@ -85,7 +108,7 @@ export interface ModelTest {
 }
 
 export interface OlmModel {
-  olm: "0.1";
+  olm: "0.1" | "0.2";
   id: string;
   name: string;
   version: string;
@@ -96,6 +119,7 @@ export interface OlmModel {
   population?: string;
   assumptions?: string[];
   sources: Source[];
+  inputs?: CustomInput[];
   baseline: {
     type: "period-life-table";
     source: string;

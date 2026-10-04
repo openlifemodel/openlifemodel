@@ -1,8 +1,8 @@
 import { Ajv2020, type ErrorObject } from "ajv/dist/2020.js";
 import { parse, stringify } from "yaml";
-import olmSchema from "../../spec/olm-0.1.schema.json" with { type: "json" };
-import profileSchema from "../../spec/person-profile-0.1.schema.json" with { type: "json" };
-import type { Factor, OlmModel, PersonProfile } from "./types.ts";
+import olmSchema from "../../spec/olm-0.2.schema.json" with { type: "json" };
+import profileSchema from "../../spec/person-profile-0.2.schema.json" with { type: "json" };
+import type { Factor, InputInfo, OlmModel, PersonProfile } from "./types.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true, strictRequired: false, allowUnionTypes: true });
 const checkModelShape = ajv.compile<OlmModel>(olmSchema);
@@ -24,7 +24,50 @@ function formatAjvErrors(errors: ErrorObject[] | null | undefined): string[] {
 // Prevalences may be rounded; accept a small total error.
 const PREVALENCE_TOLERANCE = 0.011;
 
-function factorRules(factor: Factor, normalized: boolean, sourceIds: Set<string>): string[] {
+type ProfileProperty = { enum?: string[]; minimum?: number; maximum?: number };
+const RESERVED = new Set(["age", "sex", "custom"]);
+
+/** The standard PersonProfile inputs a factor may use, read from the profile schema. */
+export const STANDARD_INPUTS: ReadonlyMap<string, InputInfo> = new Map(
+  Object.entries(profileSchema.properties as Record<string, ProfileProperty>)
+    .filter(([id]) => !RESERVED.has(id))
+    .map(([id, prop]): [string, InputInfo] =>
+      prop.enum
+        ? [id, { id, standard: true, type: "choice", values: prop.enum }]
+        : [id, { id, standard: true, type: "number", min: prop.minimum ?? -Infinity, max: prop.maximum ?? Infinity }],
+    ),
+);
+
+/** What kind of value a factor input takes: a standard field or one of the model's custom inputs. */
+export function inputInfo(model: OlmModel, id: string): InputInfo | undefined {
+  const standard = STANDARD_INPUTS.get(id);
+  if (standard) return standard;
+  const custom = model.inputs?.find((i) => i.id === id);
+  if (!custom) return undefined;
+  return custom.type === "choice"
+    ? { id, standard: false, type: "choice", values: (custom.choices ?? []).map((c) => c.value), declaration: custom }
+    : { id, standard: false, type: "number", min: custom.min ?? -Infinity, max: custom.max ?? Infinity, declaration: custom };
+}
+
+/** Errors in a profile's answers to the model's custom inputs. */
+export function customValueErrors(model: OlmModel, profile: PersonProfile): string[] {
+  const errors: string[] = [];
+  for (const [id, value] of Object.entries(profile.custom ?? {})) {
+    const info = inputInfo(model, id);
+    if (!info || info.standard) {
+      errors.push(`custom answer "${id}" is not an input of this model`);
+    } else if (info.type === "number") {
+      if (typeof value !== "number" || value < info.min || value > info.max) {
+        errors.push(`${info.declaration?.label ?? id} must be a number between ${info.min} and ${info.max}`);
+      }
+    } else if (typeof value !== "string" || !info.values.includes(value)) {
+      errors.push(`${info.declaration?.label ?? id} must be one of: ${info.values.join(", ")}`);
+    }
+  }
+  return errors;
+}
+
+function factorRules(model: OlmModel, factor: Factor, normalized: boolean, sourceIds: Set<string>): string[] {
   const where = `factor "${factor.id}"`;
   const errors: string[] = [];
   if (factor.source !== undefined && !sourceIds.has(factor.source)) {
@@ -43,25 +86,31 @@ function factorRules(factor: Factor, normalized: boolean, sourceIds: Set<string>
     }
   }
 
+  const info = inputInfo(model, factor.input);
+  if (!info) {
+    errors.push(`${where} reads "${factor.input}", which is neither a standard input nor declared in inputs`);
+    return errors;
+  }
   if (factor.type === "categorical") {
-    if (factor.input !== "smoking_status") {
+    if (info.type !== "choice") {
       errors.push(`${where}: input "${factor.input}" is numeric, so the factor must be banded`);
+      return errors;
     }
-    const allowed = (profileSchema.properties.smoking_status.enum as string[]);
     const seen = new Set<string>();
     for (const level of factor.levels) {
       if (seen.has(level.value)) errors.push(`${where} lists level "${level.value}" twice`);
       seen.add(level.value);
     }
-    for (const value of allowed) {
+    for (const value of info.values) {
       if (!seen.has(value)) errors.push(`${where} has no level for "${value}"`);
     }
     for (const value of seen) {
-      if (!allowed.includes(value)) errors.push(`${where} has unknown level "${value}"`);
+      if (!info.values.includes(value)) errors.push(`${where} has unknown level "${value}"`);
     }
   } else {
-    if (factor.input === "smoking_status") {
-      errors.push(`${where}: input "smoking_status" is categorical, so the factor must be categorical`);
+    if (info.type !== "number") {
+      errors.push(`${where}: input "${factor.input}" is a choice, so the factor must be categorical`);
+      return errors;
     }
     const bands = factor.bands;
     bands.forEach((band, i) => {
@@ -107,12 +156,31 @@ function semanticErrors(model: OlmModel): string[] {
       if (inputs.has(factor.input)) errors.push(`input "${factor.input}" is used by more than one factor`);
       factorIds.add(factor.id);
       inputs.add(factor.input);
-      errors.push(...factorRules(factor, normalized, sourceIds));
+      errors.push(...factorRules(model, factor, normalized, sourceIds));
     }
   }
 
+  const declared = new Set<string>();
+  const used = new Set(model.adjustment?.factors.map((f) => f.input) ?? []);
+  for (const input of model.inputs ?? []) {
+    const where = `input "${input.id}"`;
+    if (RESERVED.has(input.id) || STANDARD_INPUTS.has(input.id)) {
+      errors.push(`${where} has the same id as a standard input; use the standard input instead`);
+    }
+    if (declared.has(input.id)) errors.push(`${where} is declared twice`);
+    declared.add(input.id);
+    if (!used.has(input.id)) errors.push(`${where} is declared but no factor uses it`);
+    if (input.type === "number" && input.min !== undefined && input.max !== undefined && input.min >= input.max) {
+      errors.push(`${where}: min must be below max`);
+    }
+    const values = (input.choices ?? []).map((c) => c.value);
+    if (new Set(values).size !== values.length) errors.push(`${where} lists a choice twice`);
+  }
+
   for (const test of model.tests ?? []) {
-    for (const e of profileErrors(test.profile)) errors.push(`test "${test.name}": profile ${e}`);
+    const problems = profileErrors(test.profile);
+    if (problems.length === 0) problems.push(...customValueErrors(model, test.profile));
+    for (const e of problems) errors.push(`test "${test.name}": profile ${e}`);
   }
   return errors;
 }

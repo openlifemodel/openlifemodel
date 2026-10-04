@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlifemodel.com/schema/person-profile-0.1.json",
-  "title": "OpenLifeModel PersonProfile 0.1",
-  "description": "Canonical personal inputs that OLM 0.1 models may reference. Every field except age and sex is optional; models decide how to treat missing values.",
+  "$id": "https://openlifemodel.com/schema/person-profile-0.2.json",
+  "title": "OpenLifeModel PersonProfile 0.2",
+  "description": "Standard personal inputs that OLM models may reference, plus answers to model-declared custom inputs. Every field except age and sex is optional; models decide how to treat missing values.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -58,6 +58,19 @@
       "type": "number",
       "minimum": 0,
       "maximum": 200
+    },
+    "custom": {
+      "description": "Answers to custom inputs declared by a model, keyed by the input's id. Numbers for number inputs, the choice value for choice inputs.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": [
+          "number",
+          "string"
+        ]
+      }
     }
   }
 }

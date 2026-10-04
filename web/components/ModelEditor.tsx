@@ -1,7 +1,7 @@
 "use client";
 
 import type { Factor, OlmModel } from "@openlifemodel/engine";
-import { LEVEL_LABELS } from "@/lib/labels";
+import { levelLabel } from "@/lib/labels";
 
 interface Props {
   model: OlmModel;
@@ -14,9 +14,9 @@ function bandLabel(min: number | undefined, max: number | undefined): string {
   return `${min} to under ${max}`;
 }
 
-function rows(factor: Factor) {
+function rows(model: OlmModel, factor: Factor) {
   return factor.type === "categorical"
-    ? factor.levels.map((l) => ({ label: LEVEL_LABELS[l.value] ?? l.value, hazard_ratio: l.hazard_ratio, prevalence: l.prevalence }))
+    ? factor.levels.map((l) => ({ label: levelLabel(model, factor, l.value), hazard_ratio: l.hazard_ratio, prevalence: l.prevalence }))
     : factor.bands.map((b) => ({ label: bandLabel(b.min, b.max), hazard_ratio: b.hazard_ratio, prevalence: b.prevalence }));
 }
 
@@ -59,7 +59,7 @@ export function ModelEditor({ model, onEdit }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows(factor).map((row, ri) => (
+              {rows(model, factor).map((row, ri) => (
                 <tr key={row.label}>
                   <td className="py-1.5 pr-3 text-muted">{row.label}</td>
                   <td className="py-1 pr-3">

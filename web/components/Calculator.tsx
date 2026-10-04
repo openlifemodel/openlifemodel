@@ -8,7 +8,8 @@ import {
   serializeModel,
   validateModel,
   type CalculationResult,
-  type FactorInput,
+  type CustomInput,
+  type StandardInput,
   type FactorLevel,
   type FactorResult,
   type OlmModel,
@@ -29,7 +30,7 @@ interface Entry {
 }
 
 type BodyField = "height_cm" | "weight_kg" | "height_ft" | "height_in" | "weight_lb";
-type Draft = Record<"age" | "sex" | FactorInput | BodyField | "units", string>;
+type Draft = Record<"age" | "sex" | StandardInput | BodyField | "units", string>;
 type Units = "metric" | "us";
 
 const EMPTY_DRAFT: Draft = {
@@ -49,10 +50,11 @@ const EMPTY_DRAFT: Draft = {
 };
 
 const STORAGE_KEY = "olm.profile.v1";
+const CUSTOM_STORAGE_KEY = "olm.custom.v1";
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 const NUMERIC_INPUTS: Record<
-  Exclude<FactorInput, "smoking_status">,
+  Exclude<StandardInput, "smoking_status">,
   { label: string; unit: string; hint: string; step: string; min: number; max: number }
 > = {
   bmi: { label: "Body mass index", unit: "kg/m²", hint: "", step: "0.1", min: 10, max: 80 },
@@ -142,7 +144,10 @@ function defaultUnits(): Units {
   }
 }
 
-function toProfile(draft: Draft): PersonProfile {
+/** Answers to the selected model's custom inputs, keyed by input id. */
+type CustomDraft = Record<string, string>;
+
+function toProfile(draft: Draft, customDraft: CustomDraft, inputs: CustomInput[]): PersonProfile {
   const profile: PersonProfile = { age: Number(draft.age), sex: draft.sex as PersonProfile["sex"] };
   if (draft.smoking_status) profile.smoking_status = draft.smoking_status as NonNullable<PersonProfile["smoking_status"]>;
   for (const key of Object.keys(NUMERIC_INPUTS) as (keyof typeof NUMERIC_INPUTS)[]) {
@@ -152,6 +157,12 @@ function toProfile(draft: Draft): PersonProfile {
     const bmi = bmiFromBody(draft);
     if (bmi !== null) profile.bmi = bmi;
   }
+  const custom: Record<string, number | string> = {};
+  for (const input of inputs) {
+    const raw = customDraft[input.id]?.trim() ?? "";
+    if (raw !== "") custom[input.id] = input.type === "number" ? Number(raw) : raw;
+  }
+  if (Object.keys(custom).length > 0) profile.custom = custom;
   return profile;
 }
 
@@ -181,6 +192,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   );
   const [selected, setSelected] = useState(models[0]?.id ?? "");
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [customDraft, setCustomDraft] = useState<CustomDraft>({});
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [editorReset, setEditorReset] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -192,6 +204,8 @@ export function Calculator({ models }: { models: OlmModel[] }) {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const restoredDraft = saved ? { ...EMPTY_DRAFT, ...(JSON.parse(saved) as Partial<Draft>) } : EMPTY_DRAFT;
+      const savedCustom = localStorage.getItem(CUSTOM_STORAGE_KEY);
+      if (savedCustom) setCustomDraft(JSON.parse(savedCustom) as CustomDraft);
       setDraft({ ...restoredDraft, units: restoredDraft.units || defaultUnits() });
     } catch {
       // Storage unavailable: start from the defaults.
@@ -203,15 +217,16 @@ export function Calculator({ models }: { models: OlmModel[] }) {
     if (!restored) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(customDraft));
     } catch {
       // Ignore: remembering the profile is a convenience.
     }
-  }, [draft, restored]);
+  }, [draft, customDraft, restored]);
 
   const entry = entries.find((e) => e.key === selected) ?? entries[0];
   const model = entry?.model;
   const usedInputs = new Set(model?.adjustment?.factors.map((f) => f.input) ?? []);
-  const profile = toProfile(draft);
+  const profile = toProfile(draft, customDraft, model?.inputs ?? []);
   const bodyBmi = bmiFromBody(draft);
 
   const modelErrors = useMemo(() => {
@@ -437,6 +452,23 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               );
             })}
 
+            {(model?.inputs ?? []).length > 0 && (
+              <fieldset className="border-t border-line pt-5">
+                <legend className="sr-only">Questions from this model</legend>
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">Asked by this model</p>
+                <div className="space-y-5">
+                {(model?.inputs ?? []).map((input) => (
+                  <CustomField
+                    key={input.id}
+                    input={input}
+                    value={customDraft[input.id] ?? ""}
+                    onChange={(v) => setCustomDraft((d) => ({ ...d, [input.id]: v }))}
+                  />
+                ))}
+                </div>
+              </fieldset>
+            )}
+
             <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs leading-relaxed text-muted">
               <svg className="mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" />
@@ -466,6 +498,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               result={outcome.result}
               population={outcome.population}
               quitNow={outcome.quitNow}
+              inputs={model?.inputs ?? []}
               who={`${profile.age}-year-old ${sexWord}`}
             />
             )}
@@ -574,6 +607,43 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   );
 }
 
+/** A question declared by the model itself (OLM custom input). */
+function CustomField({ input, value, onChange }: { input: CustomInput; value: string; onChange: (v: string) => void }) {
+  const title = input.question ?? input.label;
+  return (
+    <div>
+      <label className="block">
+        <span className="label">{title}</span>
+        {input.type === "choice" ? (
+          <select className="field" value={value} onChange={(e) => onChange(e.target.value)}>
+            <option value="">Prefer not to say</option>
+            {(input.choices ?? []).map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="unit-field block">
+            <input
+              type="number"
+              inputMode="decimal"
+              className="field"
+              min={input.min}
+              max={input.max}
+              step={input.step ?? "any"}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            <span>{input.unit}</span>
+          </span>
+        )}
+      </label>
+      {input.help && <p className="hint">{input.help}</p>}
+    </div>
+  );
+}
+
 interface Outcome {
   result: CalculationResult;
   population: CalculationResult;
@@ -587,7 +657,7 @@ function quitBandFor(age: number): NonNullable<PersonProfile["smoking_status"]> 
   return "former_quit_55_plus";
 }
 
-function Results({ result, population, quitNow, who }: Outcome & { who: string }) {
+function Results({ result, population, quitNow, who, inputs }: Outcome & { who: string; inputs: CustomInput[] }) {
   const diff = result.remaining_life_expectancy - population.remaining_life_expectancy;
   const factors = result.factors.filter((f) => f.value !== null);
 
@@ -652,7 +722,7 @@ function Results({ result, population, quitNow, who }: Outcome & { who: string }
         })}
       </div>
 
-      {factors.length > 0 && <FactorList factors={factors} quitNow={quitNow} />}
+      {factors.length > 0 && <FactorList factors={factors} quitNow={quitNow} inputs={inputs} />}
 
       {result.warnings.length > 0 && (
         <p className="text-xs leading-relaxed text-faint">
@@ -663,17 +733,18 @@ function Results({ result, population, quitNow, who }: Outcome & { who: string }
   );
 }
 
-const UNIT_PHRASES: Partial<Record<FactorInput, (range: string) => string>> = {
+const UNIT_PHRASES: Partial<Record<string, (range: string) => string>> = {
   bmi: (r) => `BMI ${r}`,
   mvpa_minutes_per_week: (r) => `${r} min/week`,
   systolic_bp: (r) => `${r} mmHg`,
   alcohol_drinks_per_week: (r) => `${r} drinks/week`,
 };
 
-/** "never smoked or quit before 35", "450–1,500 min/week", "BMI 18.5–25". */
-function describeLevels(input: FactorInput, levels: FactorLevel[]): string {
+/** "never smoked or quit before 35", "450–1,500 min/week", "BMI 18.5–25", "under 10 µg/m³". */
+function describeLevels(input: string, levels: FactorLevel[], custom?: CustomInput): string {
   if (levels.every((l) => typeof l === "string")) {
-    return (levels as string[]).map((l) => (LEVEL_LABELS[l] ?? l).toLowerCase()).join(" or ");
+    const label = (v: string) => custom?.choices?.find((c) => c.value === v)?.label ?? LEVEL_LABELS[v] ?? v;
+    return (levels as string[]).map((l) => label(l).toLowerCase()).join(" or ");
   }
   // Adjacent bands with the same effect read better as one range.
   const bands = levels.filter((l): l is { min?: number; max?: number } => typeof l !== "string");
@@ -681,6 +752,7 @@ function describeLevels(input: FactorInput, levels: FactorLevel[]): string {
   const max = bands[bands.length - 1]?.max;
   const n = (x: number) => x.toLocaleString("en-US");
   const range = min === undefined ? `under ${n(max ?? 0)}` : max === undefined ? `${n(min)} or more` : `${n(min)}–${n(max)}`;
+  if (custom?.unit) return `${range} ${custom.unit}`;
   return UNIT_PHRASES[input]?.(range) ?? range;
 }
 
@@ -691,7 +763,7 @@ const signed = (y: number) => `${y >= 0 ? "+" : "−"}${fmt(Math.abs(y))} y`;
  * still open to this person: past smoking cannot be undone, so a current smoker's
  * best is quitting now and a former smoker's is their actual quit age.
  */
-function factorNote(f: FactorResult, quitNow: number | null): string {
+function factorNote(f: FactorResult, quitNow: number | null, inputs: CustomInput[]): string {
   if (f.input === "smoking_status") {
     if (f.value === "current" && quitNow !== null) return `Best ${signed(quitNow)} with quitting now`;
     if (f.value === "former") return `Best ${signed(f.life_years)} with having quit`;
@@ -699,10 +771,11 @@ function factorNote(f: FactorResult, quitNow: number | null): string {
       return `Best ${signed(f.life_years)} with ${(LEVEL_LABELS[f.value] ?? f.value).toLowerCase()}`;
     }
   }
-  return `Best ${signed(f.best_life_years)} with ${describeLevels(f.input, f.best_levels)}`;
+  const custom = inputs.find((i) => i.id === f.input);
+  return `Best ${signed(f.best_life_years)} with ${describeLevels(f.input, f.best_levels, custom)}`;
 }
 
-function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: number | null }) {
+function FactorList({ factors, quitNow, inputs }: { factors: FactorResult[]; quitNow: number | null; inputs: CustomInput[] }) {
   // One shared scale so factors can be compared: worst possible to best possible.
   const lo = Math.min(0, ...factors.map((f) => f.worst_life_years));
   const hi = Math.max(0, ...factors.map((f) => f.best_life_years));
@@ -716,7 +789,7 @@ function FactorList({ factors, quitNow }: { factors: FactorResult[]; quitNow: nu
       </p>
       <ul className="space-y-4">
         {factors.map((f) => {
-          const note = factorNote(f, quitNow);
+          const note = factorNote(f, quitNow, inputs);
           const good = f.life_years >= 0;
           return (
             <li key={f.id} className="text-sm">

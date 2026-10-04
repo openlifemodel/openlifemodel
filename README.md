@@ -92,7 +92,10 @@ pnpm --filter @openlifemodel/web dev       # http://localhost:3100
 OLM aims to be a portable, vendor-neutral format for publishing survival
 models, so that a model described in a paper can be run and verified by any
 compatible implementation. Each model file carries its own `license` field, so
-authors choose the terms for their own models. Model files use the extension
+authors choose the terms for their own models. Models use a standard set of
+inputs (age, sex, smoking, BMI, exercise and more) so they can be compared, and
+can also declare their own questions, such as air pollution exposure; see
+[spec/examples](spec/examples/). Model files use the extension
 `.olm.yaml` (plain `.olm` is also accepted). The spec is at an early draft
 stage and will change.
 
