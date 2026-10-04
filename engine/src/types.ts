@@ -5,7 +5,7 @@ export type Sex = "male" | "female";
 
 export interface PersonProfile {
   age: number;
-  sex: Sex;
+  sex?: Sex;
   smoking_status?:
     | "never"
     | "former_quit_before_35"
@@ -125,7 +125,8 @@ export interface OlmModel {
     type: "period-life-table";
     source: string;
     start_age: number;
-    qx: Partial<Record<Sex, number[]>>;
+    /** Life tables by sex, and/or "all" for both sexes combined. */
+    qx: Partial<Record<Sex | "all", number[]>>;
   };
   adjustment?: {
     method: "proportional-hazards";

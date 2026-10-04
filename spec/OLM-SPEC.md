@@ -42,7 +42,7 @@ Models read inputs from a **PersonProfile**, defined by
 | Field | Type | Unit / values | Required |
 | --- | --- | --- | --- |
 | `age` | integer 0–119 | completed years | yes |
-| `sex` | `male` \| `female` | as recorded in the baseline data | yes |
+| `sex` | `male` \| `female` | as recorded in the baseline data | no |
 | `smoking_status` | `never`, `former_quit_before_35`, `former_quit_35_44`, `former_quit_45_54`, `former_quit_55_plus`, `former` (quit age unknown), `current` | | no |
 | `bmi` | number 10–80 | kg/m² | no |
 | `systolic_bp` | number 60–260 | mmHg | no |
@@ -124,6 +124,8 @@ baseline:
 
 `qx[sex][i]` is the probability that a person alive at exact age
 `start_age + i` dies before age `start_age + i + 1`. Each value is in [0, 1).
+Tables may be given for `male`, `female` and/or `all` (both sexes combined).
+A model with an `all` table works for people who do not give their sex.
 
 ### 4.2 Adjustment
 
@@ -208,11 +210,12 @@ A valid model MUST also satisfy:
 
 ## 6. Calculation
 
-Given a model and a profile with age `a` and sex `s`:
+Given a model and a profile with age `a` and, optionally, sex `s`:
 
-1. Let `q = baseline.qx[s]`, `x₀ = start_age` and `ω = x₀ + len(q) − 1` (the
-   last age in the table). The calculation fails if the table for `s` is
-   missing or `a` is outside `[x₀, ω]`.
+1. Let `q = baseline.qx[s]` if the profile gives a sex `s` and the model has
+   that table, otherwise `q = baseline.qx.all`. Let `x₀ = start_age` and
+   `ω = x₀ + len(q) − 1` (the last age in the table). The calculation fails if no table applies or `a`
+   is outside `[x₀, ω]`.
 2. Compute each factor's HR (section 4.2) and their product `H`.
 3. For each age `x`, the baseline force of mortality is
    `μₓ = −ln(1 − qₓ)`, constant within the year. The person's force is `H·μₓ`.
@@ -224,8 +227,8 @@ Given a model and a profile with age `a` and sex `s`:
 6. **Median age at death** is the age `t` where `S(t) = 0.5`, found exactly
    within the year where survival crosses one half:
    `t = x + ln(S(x) / 0.5) / (H·μₓ)`.
-7. **Equivalent age** is the age `x*` at which an average person of the same
-   sex under this baseline (`H = 1`) has the same remaining life expectancy
+7. **Equivalent age** is the age `x*` at which an average person under the
+   same table `q` (`H = 1`) has the same remaining life expectancy
    `e`. Compute the baseline remaining life expectancy `e₀(x)` at each whole
    age `x₀ … ω` and interpolate linearly between the two whole ages whose
    values bracket `e`. If `e` is above `e₀(x₀)` the result is `x₀`; if it is

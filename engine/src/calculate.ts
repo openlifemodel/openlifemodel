@@ -133,8 +133,15 @@ export function calculate(model: OlmModel, input: unknown): CalculationResult {
   const customErrors = customValueErrors(model, profile);
   if (customErrors.length > 0) throw new OlmValidationError("profile", customErrors);
   const { start_age: startAge } = model.baseline;
-  const qx = model.baseline.qx[profile.sex];
-  if (!qx) throw new OlmValidationError("profile", [`model "${model.id}" has no baseline for sex "${profile.sex}"`]);
+  // The person's own sex table if the model has one, otherwise the combined table.
+  const qx = (profile.sex && model.baseline.qx[profile.sex]) || model.baseline.qx.all;
+  if (!qx) {
+    throw new OlmValidationError("profile", [
+      profile.sex
+        ? `model "${model.id}" has no life table for sex "${profile.sex}"`
+        : `sex is required by this model, which has separate life tables for men and women`,
+    ]);
+  }
   if (profile.age < startAge || profile.age > startAge + qx.length - 1) {
     throw new OlmValidationError("profile", [
       `age ${profile.age} is outside the model's table (${startAge}–${startAge + qx.length - 1})`,

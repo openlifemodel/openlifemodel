@@ -154,7 +154,7 @@
           "minimum": 0
         },
         "qx": {
-          "description": "Probability of dying between exact age x and x+1, one entry per age from start_age. Keys are sexes from the PersonProfile.",
+          "description": "Probability of dying between exact age x and x+1, one entry per age from start_age. Keys are male, female and/or all (both sexes combined).",
           "type": "object",
           "additionalProperties": false,
           "minProperties": 1,
@@ -163,6 +163,9 @@
               "$ref": "#/$defs/qxTable"
             },
             "female": {
+              "$ref": "#/$defs/qxTable"
+            },
+            "all": {
               "$ref": "#/$defs/qxTable"
             }
           }

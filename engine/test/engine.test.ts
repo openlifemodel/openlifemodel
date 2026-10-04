@@ -144,8 +144,32 @@ describe("calculate", () => {
     expect(result.warnings).toHaveLength(3);
   });
 
+  it("needs sex when a model only has tables by sex", () => {
+    expect(() => calculate(baseline, { age: 40 })).toThrow(/sex is required by this model/);
+  });
+
+  it("uses a combined table when sex is not given", () => {
+    const combined: OlmModel = structuredClone(baseline);
+    combined.baseline.qx = { ...combined.baseline.qx, all: combined.baseline.qx.female! };
+    validateModel(structuredClone(combined));
+    const anyone = calculate(combined, { age: 40 });
+    const woman = calculate(combined, { age: 40, sex: "female" });
+    const man = calculate(combined, { age: 40, sex: "male" });
+    expect(anyone.remaining_life_expectancy).toBeCloseTo(woman.remaining_life_expectancy, 10);
+    expect(man.remaining_life_expectancy).toBeLessThan(woman.remaining_life_expectancy);
+    expect(anyone.equivalent_age).toBeCloseTo(40, 6);
+
+    const allOnly: OlmModel = structuredClone(combined);
+    allOnly.baseline.qx = { all: combined.baseline.qx.all! };
+    // With only a combined table, a stated sex still uses it.
+    expect(calculate(validateModel(allOnly), { age: 40, sex: "male" }).remaining_life_expectancy).toBeCloseTo(
+      anyone.remaining_life_expectancy,
+      10,
+    );
+  });
+
   it("rejects invalid profiles", () => {
-    expect(() => calculate(baseline, { age: 40 })).toThrow(OlmValidationError);
+    expect(() => calculate(baseline, {})).toThrow(OlmValidationError);
     expect(() => calculate(baseline, { age: 40, sex: "male", bmi: 500 })).toThrow(OlmValidationError);
     expect(() => calculate(baseline, { age: 40, sex: "male", height: 180 })).toThrow(OlmValidationError);
   });

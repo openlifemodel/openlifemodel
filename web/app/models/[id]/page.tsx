@@ -101,7 +101,9 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
       <h2>Baseline</h2>
       <p>
         Period life table from age {model.baseline.start_age}, for{" "}
-        {Object.keys(model.baseline.qx).join(" and ")}. Source: {sources.get(model.baseline.source)?.citation}
+        {new Intl.ListFormat("en", { type: "conjunction" }).format(
+          Object.keys(model.baseline.qx).map((k) => (k === "all" ? "both sexes combined" : k === "male" ? "men" : "women")),
+        )}. Source: {sources.get(model.baseline.source)?.citation}
       </p>
 
       {model.adjustment && (
