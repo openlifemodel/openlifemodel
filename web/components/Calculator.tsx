@@ -17,6 +17,7 @@ import {
 } from "@openlifemodel/engine";
 import { LEVEL_LABELS } from "@/lib/labels";
 import { editedCopy, findProblems } from "@/lib/draft-model";
+import type { LibraryTable } from "@/lib/life-tables";
 import { ModelEditorPanel } from "./editor/ModelEditorPanel";
 import { ModelCard } from "./ModelCard";
 import { SummaryBar } from "./SummaryBar";
@@ -195,7 +196,7 @@ function download(filename: string, text: string) {
 const fmt = (n: number, digits = 1) => n.toFixed(digits);
 const pct = (p: number | null) => (p === null ? "n/a" : p < 0.001 ? "<0.1%" : `${(p * 100).toFixed(p < 0.1 ? 1 : 0)}%`);
 
-export function Calculator({ models }: { models: OlmModel[] }) {
+export function Calculator({ models, lifeTables }: { models: OlmModel[]; lifeTables: LibraryTable[] }) {
   const [entries, setEntries] = useState<Entry[]>(() =>
     models.map((m) => ({ key: m.id, root: m.id, origin: "bundled", model: m, valid: m })),
   );
@@ -299,7 +300,6 @@ export function Calculator({ models }: { models: OlmModel[] }) {
       // The first edit of a bundled model creates a clearly named copy.
       const copy = editedCopy(entry.model);
       const draft = { ...next, id: copy.id, name: copy.name, version: copy.version, status: copy.status };
-      delete draft.tests;
       const key = `${entry.root}:edited`;
       setEntries((list) => [
         ...list.filter((e) => e.key !== key),
@@ -581,6 +581,8 @@ export function Calculator({ models }: { models: OlmModel[] }) {
           onImport={() => fileInput.current?.click()}
           onReset={resetEdits}
           canReset={entry?.origin === "edited"}
+          library={lifeTables}
+          currentProfile={"errors" in outcome ? null : profile}
         />
       )}
 

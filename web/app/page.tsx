@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Calculator } from "@/components/Calculator";
+import { lifeTableLibrary } from "@/lib/life-tables";
 import { bundledModels } from "@/lib/models";
 import { REPO_URL } from "@/lib/site";
 
@@ -45,7 +46,7 @@ export default function Home() {
         </p>
       </section>
 
-      <Calculator models={models} />
+      <Calculator models={models} lifeTables={lifeTableLibrary(models)} />
 
       <section className="mt-16 grid gap-4 sm:grid-cols-3" aria-label="Why OpenLifeModel">
         {POINTS.map((p) => (

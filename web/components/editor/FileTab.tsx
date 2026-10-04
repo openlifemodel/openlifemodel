@@ -6,11 +6,13 @@ import { SectionIntro } from "./Fields";
 export function FileTab({
   model,
   valid,
+  blocker,
   onDownload,
   onImport,
 }: {
   model: OlmModel;
   valid: boolean;
+  blocker: string | null;
   onDownload: () => void;
   onImport: () => void;
 }) {
@@ -28,7 +30,7 @@ export function FileTab({
           Import a model file
         </button>
       </div>
-      {!valid && <p className="text-sm text-bad">Fix the problems listed above to download.</p>}
+      {!valid && blocker && <p className="text-sm text-bad">{blocker}</p>}
       <details>
         <summary className="cursor-pointer text-sm font-medium text-accent-strong">Show the file</summary>
         <pre className="mt-3 max-h-[28rem] overflow-auto rounded-xl border border-line bg-surface-2 p-4 font-mono text-xs leading-relaxed">

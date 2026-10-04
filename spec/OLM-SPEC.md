@@ -116,6 +116,7 @@ inputs:
 baseline:
   type: period-life-table
   source: ssa-2023          # a sources[].id
+  region: US                # optional ISO 3166-1 country code
   start_age: 0
   qx:
     male:   [0.006015, 0.000479, ...]
@@ -125,6 +126,9 @@ baseline:
 `qx[sex][i]` is the probability that a person alive at exact age
 `start_age + i` dies before age `start_age + i + 1`. Each value is in [0, 1).
 Tables may be given for `male`, `female` and/or `all` (both sexes combined).
+`region` (optional) names the country whose population the table describes.
+Population shares (section 4.2) should describe the same population, so a
+model moved to another country's table needs new shares as well.
 A model with an `all` table works for people who do not give their sex.
 
 ### 4.2 Adjustment
@@ -253,6 +257,7 @@ within 0.02 years at ages 0–80.
 ```yaml
 tests:
   - name: Favourable profile, male aged 40
+    origin: reference-engine        # or: published
     profile: {age: 40, sex: male, smoking_status: never}
     expect:
       remaining_life_expectancy: {value: 45.9059, tolerance: 0.001}
@@ -264,9 +269,15 @@ lies within `tolerance` of its computed value. Supported outputs:
 `remaining_life_expectancy`, `median_age_at_death`, `equivalent_age`, `survival_to_80`,
 `survival_to_90`, `survival_to_100` and `combined_hazard_ratio`.
 
-Authors SHOULD use independently published values where they exist (for
-example, a statistics agency's published life expectancies) and SHOULD
-otherwise pin values produced by the reference engine.
+`origin` (optional) records where the expected values came from:
+`published` when they are reported by the source itself (for example, a
+statistics agency's published life expectancies), the strongest check that a
+model was transcribed correctly; `reference-engine` when they were computed by
+an OLM implementation and pinned, which guards against regressions.
+
+Authors SHOULD use published values where they exist and SHOULD otherwise pin
+values produced by the reference engine. Reference tests are optional, but a
+model without them cannot be checked by other implementations.
 
 ## 8. Interpretation
 

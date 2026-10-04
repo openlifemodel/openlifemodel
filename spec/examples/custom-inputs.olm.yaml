@@ -107,6 +107,7 @@ inputs:
 baseline:
   type: period-life-table
   source: ssa-2023
+  region: US
   start_age: 0
   qx:
     male: [

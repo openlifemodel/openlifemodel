@@ -87,6 +87,7 @@ sources:
 baseline:
   type: period-life-table
   source: ssa-2023
+  region: US
   start_age: 0
   qx:
     male: [
@@ -174,12 +175,14 @@ adjustment:
 tests:
   # Values produced by the reference engine (OLM 0.1 method).
   - name: Nothing provided reproduces the SSA baseline
+    origin: reference-engine
     profile: {age: 40, sex: male}
     expect:
       remaining_life_expectancy: {value: 38.5795, tolerance: 0.001}
       equivalent_age: {value: 40, tolerance: 0.0001}
       combined_hazard_ratio: {value: 1, tolerance: 0.000001}
   - name: Never smoked, BMI 23, 200 minutes of exercise, male aged 40
+    origin: reference-engine
     profile: {age: 40, sex: male, smoking_status: never, bmi: 23, mvpa_minutes_per_week: 200}
     expect:
       remaining_life_expectancy: {value: 47.2914, tolerance: 0.001}
@@ -187,6 +190,7 @@ tests:
       median_age_at_death: {value: 89.9394, tolerance: 0.001}
       combined_hazard_ratio: {value: 0.4349, tolerance: 0.0001}
   - name: Current smoker, BMI 36, no exercise, male aged 40
+    origin: reference-engine
     profile: {age: 40, sex: male, smoking_status: current, bmi: 36, mvpa_minutes_per_week: 0}
     expect:
       remaining_life_expectancy: {value: 25.3023, tolerance: 0.001}
@@ -194,6 +198,7 @@ tests:
       survival_to_80: {value: 0.1122, tolerance: 0.0001}
       combined_hazard_ratio: {value: 3.5094, tolerance: 0.0001}
   - name: Quit smoking at 45-54, BMI 27, 300 minutes, female aged 60
+    origin: reference-engine
     profile: {age: 60, sex: female, smoking_status: former_quit_45_54, bmi: 27, mvpa_minutes_per_week: 300}
     expect:
       remaining_life_expectancy: {value: 28.1445, tolerance: 0.001}

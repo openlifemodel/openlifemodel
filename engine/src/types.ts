@@ -104,6 +104,7 @@ export type ExpectedOutput =
 
 export interface ModelTest {
   name: string;
+  origin?: "published" | "reference-engine";
   profile: PersonProfile;
   expect: Partial<Record<ExpectedOutput, Expectation>>;
 }
@@ -124,6 +125,8 @@ export interface OlmModel {
   baseline: {
     type: "period-life-table";
     source: string;
+    /** ISO 3166-1 alpha-2 code of the table's population, e.g. "US". */
+    region?: string;
     start_age: number;
     /** Life tables by sex, and/or "all" for both sexes combined. */
     qx: Partial<Record<Sex | "all", number[]>>;

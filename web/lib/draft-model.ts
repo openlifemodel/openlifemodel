@@ -1,17 +1,20 @@
 import {
+  calculate,
   OlmValidationError,
   STANDARD_INPUTS,
   inputInfo,
   validateModel,
   type CustomInput,
   type Factor,
+  type ModelTest,
   type OlmModel,
+  type PersonProfile,
 } from "@openlifemodel/engine";
 
 // Helpers for the in-browser model editor. Everything here is pure: it takes
 // a model and returns a new one, so React state stays simple.
 
-export type EditorTab = "overview" | "factors" | "questions" | "sources" | "file";
+export type EditorTab = "overview" | "factors" | "questions" | "lifetable" | "sources" | "tests" | "file";
 
 export interface Problem {
   tab: EditorTab;
@@ -52,8 +55,7 @@ export function editedCopy(model: OlmModel): OlmModel {
   copy.name = `${model.name} (edited)`.slice(0, 200);
   copy.version = `${model.version.split("-")[0]}-custom`;
   if (copy.status === "published") copy.status = "experimental";
-  // Reference tests describe the original numbers.
-  delete copy.tests;
+  // Reference tests are kept: the Tests tab shows which no longer match.
   return copy;
 }
 
@@ -150,12 +152,14 @@ const TAB_RULES: [RegExp, EditorTab][] = [
   [/^\/adjustment/, "factors"],
   [/^\/inputs/, "questions"],
   [/^\/(sources|assumptions)/, "sources"],
-  [/^\/(tests|baseline)/, "file"],
+  [/^\/baseline/, "lifetable"],
+  [/^\/tests/, "tests"],
   [/^\//, "overview"],
   [/^factor |^input "[^"]+" is used by more than one factor/, "factors"],
   [/^input "/, "questions"],
   [/^source |^baseline cites/, "sources"],
-  [/^test |^baseline /, "file"],
+  [/^test /, "tests"],
+  [/^baseline /, "lifetable"],
 ];
 
 function tabFor(message: string): EditorTab {
@@ -221,4 +225,136 @@ export function findProblems(model: OlmModel): Problem[] {
       return { tab: tabFor(path), message: where ? `${where}: ${rest}` : rest };
     });
   }
+}
+
+export type TableKey = "male" | "female" | "all";
+
+export type ParsedTable =
+  | { ok: true; startAge: number; qx: Partial<Record<TableKey, number[]>> }
+  | { ok: false; error: string };
+
+const HEADER_KEYS: [RegExp, TableKey][] = [
+  [/^(f|female|females|women|woman)\b/i, "female"],
+  [/^(m|male|males|men|man)\b/i, "male"],
+  [/^(all|total|both|persons|combined)\b/i, "all"],
+];
+
+/**
+ * Read a life table pasted from a spreadsheet: an age column, then one to
+ * three death-probability columns. A header row names the columns (male,
+ * female, all); without one, a single column means both sexes combined and
+ * two columns mean male then female.
+ */
+export function parseLifeTable(text: string): ParsedTable {
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    // Spreadsheets paste tab-separated; CSV uses commas. Otherwise split on spaces.
+    .map((line) => line.split(/[\t,;]/.test(line) ? /[\t,;]/ : /\s+/).map((cell) => cell.trim()).filter((c) => c !== ""));
+  if (rows.length < 2) return { ok: false, error: "Paste at least two rows: an age column and death probabilities." };
+
+  let keys: TableKey[];
+  const first = rows[0] as string[];
+  const hasHeader = first.slice(1).some((cell) => !Number.isFinite(Number(cell)));
+  if (hasHeader) {
+    keys = first.slice(1).map((cell) => HEADER_KEYS.find(([pattern]) => pattern.test(cell))?.[1] ?? ("?" as TableKey));
+    if (keys.some((k) => (k as string) === "?")) {
+      return { ok: false, error: `Name the columns male, female or all (got "${first.slice(1).join('", "')}").` };
+    }
+    rows.shift();
+  } else {
+    const width = first.length - 1;
+    if (width === 1) keys = ["all"];
+    else if (width === 2) keys = ["male", "female"];
+    else return { ok: false, error: "Without a header row, paste age plus one column (both sexes) or two (male, female)." };
+  }
+  if (new Set(keys).size !== keys.length) return { ok: false, error: "Each table (male, female, all) can appear only once." };
+
+  const qx: Partial<Record<TableKey, number[]>> = Object.fromEntries(keys.map((k) => [k, [] as number[]]));
+  let startAge = NaN;
+  for (const [i, row] of rows.entries()) {
+    const age = Number(row[0]);
+    if (!Number.isInteger(age)) return { ok: false, error: `Row ${i + 1}: the first column should be a whole-number age.` };
+    if (i === 0) startAge = age;
+    else if (age !== startAge + i) return { ok: false, error: `Row ${i + 1}: ages must go up by one (expected ${startAge + i}, got ${age}).` };
+    if (row.length - 1 !== keys.length) return { ok: false, error: `Row ${i + 1} (age ${age}) has ${row.length - 1} values; expected ${keys.length}.` };
+    for (const [j, key] of keys.entries()) {
+      const q = Number(row[j + 1]);
+      if (!(q >= 0 && q < 1)) return { ok: false, error: `Age ${age}, ${key}: "${row[j + 1]}" is not a probability between 0 and 1.` };
+      qx[key]!.push(q);
+    }
+  }
+  return { ok: true, startAge, qx };
+}
+
+/** Outputs pinned for each generated test, with their tolerances. */
+const PINNED: { output: ExpectedOutputName; tolerance: number }[] = [
+  { output: "remaining_life_expectancy", tolerance: 0.001 },
+  { output: "equivalent_age", tolerance: 0.001 },
+  { output: "survival_to_90", tolerance: 0.0001 },
+  { output: "combined_hazard_ratio", tolerance: 0.0001 },
+];
+
+type ExpectedOutputName = keyof NonNullable<ModelTest["expect"]>;
+
+const round = (n: number, dp: number) => Math.round(n * 10 ** dp) / 10 ** dp;
+
+/** Pin the reference engine's current results for a profile as a test case. */
+export function pinTest(model: OlmModel, name: string, profile: PersonProfile): ModelTest {
+  const result = calculate(model, profile);
+  const values: Record<ExpectedOutputName, number | null> = {
+    remaining_life_expectancy: result.remaining_life_expectancy,
+    median_age_at_death: result.median_age_at_death,
+    equivalent_age: result.equivalent_age,
+    survival_to_80: result.survival_to[80],
+    survival_to_90: result.survival_to[90],
+    survival_to_100: result.survival_to[100],
+    combined_hazard_ratio: result.combined_hazard_ratio,
+  };
+  const expect: ModelTest["expect"] = {};
+  for (const { output, tolerance } of PINNED) {
+    const value = values[output];
+    if (value !== null) expect[output] = { value: round(value, 4), tolerance };
+  }
+  return { name: name.slice(0, 120), origin: "reference-engine", profile, expect };
+}
+
+/** A representative value inside a band or level, for building test profiles. */
+function levelValue(factor: Factor, best: boolean): string | number {
+  const entries = factor.type === "categorical" ? factor.levels : factor.bands;
+  const pickHr = best ? Math.min : Math.max;
+  const target = pickHr(...entries.map((e) => e.hazard_ratio));
+  if (factor.type === "categorical") return factor.levels.find((l) => l.hazard_ratio === target)!.value;
+  const band = factor.bands.find((b) => b.hazard_ratio === target)!;
+  if (band.min === undefined) return Math.max(0, (band.max ?? 1) - 1);
+  if (band.max === undefined) return band.min + 1;
+  return round((band.min + band.max) / 2, 2);
+}
+
+/** Typical test profiles: average, lowest-risk and highest-risk answers, for each table. */
+export function typicalTests(model: OlmModel): ModelTest[] {
+  const keys = (["male", "female", "all"] as const).filter((k) => model.baseline.qx[k]);
+  const lastAge = model.baseline.start_age + (model.baseline.qx[keys[0] ?? "all"]?.length ?? 1) - 1;
+  const age = Math.min(Math.max(40, model.baseline.start_age), lastAge);
+  const factors = model.adjustment?.factors ?? [];
+  const tests: ModelTest[] = [];
+  for (const key of keys.filter((k) => k !== "all" || keys.length === 1)) {
+    const who = key === "all" ? "person" : key === "male" ? "man" : "woman";
+    const base: PersonProfile = { age, ...(key !== "all" && { sex: key }) };
+    tests.push(pinTest(model, `Average ${who} aged ${age}`, base));
+    if (factors.length === 0) continue;
+    for (const best of [true, false]) {
+      const profile: PersonProfile = { ...base };
+      const custom: Record<string, string | number> = {};
+      for (const f of factors) {
+        const value = levelValue(f, best);
+        if (STANDARD_INPUTS.has(f.input)) (profile as unknown as Record<string, unknown>)[f.input] = value;
+        else custom[f.input] = value;
+      }
+      if (Object.keys(custom).length > 0) profile.custom = custom;
+      tests.push(pinTest(model, `${best ? "Lowest" : "Highest"}-risk answers, ${who} aged ${age}`, profile));
+    }
+  }
+  return tests;
 }
