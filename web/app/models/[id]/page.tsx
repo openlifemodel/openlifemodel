@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Factor } from "@openlifemodel/engine";
 import { bundledModel, bundledModels } from "@/lib/models";
+import { LEVEL_LABELS } from "@/lib/labels";
 import { REPO_URL } from "@/lib/site";
 
 export const dynamicParams = false;
@@ -26,7 +27,7 @@ const STATUS_TEXT = {
 
 function levelRows(factor: Factor) {
   return factor.type === "categorical"
-    ? factor.levels.map((l) => [l.value, l.hazard_ratio, l.prevalence] as const)
+    ? factor.levels.map((l) => [LEVEL_LABELS[l.value] ?? l.value, l.hazard_ratio, l.prevalence] as const)
     : factor.bands.map(
         (b) =>
           [
@@ -46,11 +47,11 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
 
   return (
     <article className="prose-olm max-w-3xl">
-      <h1 className="text-2xl font-semibold">{model.name}</h1>
-      <p className="text-sm muted">
+      <h1 className="text-3xl font-semibold tracking-tight">{model.name}</h1>
+      <p className="text-sm text-muted">
         Version {model.version} · Licence {model.license} · By {model.authors.map((a) => a.name).join(", ")}
       </p>
-      <p className={model.status === "illustrative" ? "font-semibold text-[var(--color-bad)]" : ""}>
+      <p className={`rounded-lg p-3 text-sm ${model.status === "illustrative" ? "bg-bad-soft text-bad" : "bg-accent-soft"}`}>
         {STATUS_TEXT[model.status]}
       </p>
       <p>{model.description}</p>
@@ -95,14 +96,14 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
               : ", applied to the baseline as written."}
           </p>
           {model.adjustment.factors.map((factor) => (
-            <div key={factor.id} className="mb-6">
+            <div key={factor.id} className="card mb-4 p-5">
               <h3 className="font-semibold">{factor.label}</h3>
-              <table className="mt-2 w-full text-sm">
+              <table className="mt-3 w-full text-sm">
                 <thead>
-                  <tr className="text-left muted">
+                  <tr className="text-left text-muted">
                     <th className="py-1 font-normal">Level</th>
                     <th className="py-1 font-normal">Hazard ratio</th>
-                    <th className="py-1 font-normal">Share of population</th>
+                    <th className="py-1 font-normal">Population share</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -115,7 +116,7 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
                   ))}
                 </tbody>
               </table>
-              {factor.source && <p className="mt-1 text-xs muted">Source: {sources.get(factor.source)?.citation}</p>}
+              {factor.source && <p className="mt-1 text-xs text-muted">Source: {sources.get(factor.source)?.citation}</p>}
             </div>
           ))}
         </>
