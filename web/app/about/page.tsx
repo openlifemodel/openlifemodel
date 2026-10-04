@@ -37,6 +37,15 @@ export default function About() {
         that someone with population-average habits lands exactly on the national figure.
       </p>
 
+      <p>
+        The default model, <Link href="/models/us-lifestyle/">US adults: smoking, weight and exercise</Link>,
+        takes its hazard ratios from three large studies: smoking and quitting from the US National
+        Health Interview Survey (Jha et al., NEJM 2013), body mass index from a meta-analysis of 239
+        cohorts (Global BMI Mortality Collaboration, Lancet 2016) and exercise from a pooled analysis
+        of 661,000 adults (Arem et al., JAMA Internal Medicine 2015). The population averages come
+        from the US NHANES survey.
+      </p>
+
       <h2>3. Build the survival curve</h2>
       <p>
         Applying the adjusted yearly risks age by age gives your survival curve: the chance of

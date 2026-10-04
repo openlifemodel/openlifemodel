@@ -1,4 +1,5 @@
-# OLM 0.1 model file. Specification: spec/OLM-SPEC.md
+# Test fixture: an illustrative OLM 0.1 model exercising every factor type.
+# Not shipped on the website.
 olm: "0.1"
 id: illustrative-lifestyle
 name: Illustrative lifestyle model (not evidence-based)
@@ -78,7 +79,11 @@ adjustment:
       source: illustrative
       levels:
         - {value: never, hazard_ratio: 1.0, prevalence: 0.55}
-        - {value: former, hazard_ratio: 1.3, prevalence: 0.30}
+        - {value: former_quit_before_35, hazard_ratio: 1.3, prevalence: 0.10}
+        - {value: former_quit_35_44, hazard_ratio: 1.3, prevalence: 0.08}
+        - {value: former_quit_45_54, hazard_ratio: 1.3, prevalence: 0.06}
+        - {value: former_quit_55_plus, hazard_ratio: 1.3, prevalence: 0.06}
+        - {value: former, hazard_ratio: 1.3, prevalence: 0.0}
         - {value: current, hazard_ratio: 2.5, prevalence: 0.15}
     - id: bmi
       label: Body mass index

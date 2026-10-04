@@ -1,0 +1,198 @@
+# OLM 0.1 model file. Specification: spec/OLM-SPEC.md
+olm: "0.1"
+id: us-lifestyle
+name: "US adults: smoking, weight and exercise"
+version: 0.1.0
+status: experimental
+license: CC-BY-4.0
+authors:
+  - name: OpenLifeModel contributors
+    url: https://github.com/OpenLifeModel/openlifemodel
+description: >-
+  Adjusts US population mortality for three of the best-measured lifestyle
+  factors: cigarette smoking (including the age you quit), body mass index and
+  leisure-time exercise. Each effect comes from a large published study of
+  all-cause mortality; the share of US adults in each group comes from NHANES.
+population: >-
+  US adults aged roughly 25 to 80, without serious chronic disease. The source
+  studies followed people in this range; effects at older ages are extrapolated.
+assumptions:
+  - >-
+    Baseline mortality is the SSA 2023 period life table: today's death rates,
+    with no future improvement.
+  - >-
+    Each factor's hazard ratio is constant over the rest of life. In reality
+    the excess risk from high BMI shrinks with age (Global BMI Mortality
+    Collaboration 2016), so effects at old age are probably overstated.
+  - >-
+    Factors multiply. The exercise effect is adjusted for smoking and BMI and
+    the smoking effect for adiposity, which limits double-counting; the BMI
+    effect is not adjusted for exercise, so part of it may overlap.
+  - >-
+    Hazard ratios are rescaled so that a person with the average US adult mix
+    of each factor reproduces the baseline. The mix is for all adults aged 20
+    and over, not specific to your age and sex.
+  - >-
+    Smoking risk for people who quit is taken from the age at which they
+    quit; people who quit within the previous 5 years were counted as current
+    smokers in the source study.
+  - Exercise means leisure-time activity only, not work or commuting.
+sources:
+  - id: ssa-2023
+    citation: >-
+      Social Security Administration, Office of the Chief Actuary. Actuarial
+      Life Table: Period Life Table, 2023, as used in the 2026 Trustees Report.
+    url: https://www.ssa.gov/oact/STATS/table4c6.html
+    license: Public domain (US federal government work)
+    notes: Death probabilities transcribed from the published table on 4 October 2026.
+  - id: jha-2013
+    citation: >-
+      Jha P, Ramasundarahettige C, Landsman V, et al. 21st-century hazards of
+      smoking and benefits of cessation in the United States. N Engl J Med.
+      2013;368(4):341-350.
+    doi: 10.1056/NEJMsa1211128
+    notes: >-
+      NHIS 1997-2004 linked to deaths through 2006; ages 25-79. Hazard ratios
+      from Figure 4 (sexes combined), adjusted for age, education, alcohol and
+      adiposity.
+  - id: gbmc-2016
+    citation: >-
+      The Global BMI Mortality Collaboration. Body-mass index and all-cause
+      mortality: individual-participant-data meta-analysis of 239 prospective
+      studies in four continents. Lancet. 2016;388(10046):776-786.
+    doi: 10.1016/S0140-6736(16)30175-1
+    notes: >-
+      Primary analysis (never-smokers without chronic disease, first 5 years of
+      follow-up excluded), WHO categories relative to 18.5-25, adjusted for age
+      and sex (Table 1).
+  - id: arem-2015
+    citation: >-
+      Arem H, Moore SC, Patel A, et al. Leisure time physical activity and
+      mortality: a detailed pooled analysis of the dose-response relationship.
+      JAMA Intern Med. 2015;175(6):959-967.
+    doi: 10.1001/jamainternmed.2015.0533
+    notes: >-
+      Six US and European cohorts, 661,137 adults. Hazard ratios by MET-hours
+      per week (1 MET-hour = 20 moderate-equivalent minutes), adjusted for age,
+      sex, race, education, smoking, alcohol, marital status, cancer and heart
+      disease history, and BMI.
+  - id: nhanes-2017-2020
+    citation: >-
+      National Center for Health Statistics. National Health and Nutrition
+      Examination Survey, 2017-March 2020 prepandemic files (P_DEMO, P_BMX,
+      P_SMQ, P_PAQ). Survey-weighted shares of adults aged 20 and over.
+    url: https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?Cycle=2017-2020
+    license: Public domain (US federal government work)
+    notes: Computed by models/derivations/nhanes_prevalence.py in this repository.
+baseline:
+  type: period-life-table
+  source: ssa-2023
+  start_age: 0
+  qx:
+    male: [
+      0.006015, 0.000479, 0.000320, 0.000249, 0.000194, 0.000159, 0.000137, 0.000125, 0.000120, 0.000120,
+      0.000125, 0.000140, 0.000173, 0.000233, 0.000327, 0.000463, 0.000634, 0.000819, 0.000999, 0.001138,
+      0.001235, 0.001315, 0.001378, 0.001439, 0.001509, 0.001595, 0.001685, 0.001783, 0.001876, 0.001970,
+      0.002085, 0.002202, 0.002308, 0.002407, 0.002490, 0.002577, 0.002665, 0.002764, 0.002864, 0.002987,
+      0.003115, 0.003253, 0.003419, 0.003600, 0.003777, 0.003931, 0.004073, 0.004245, 0.004477, 0.004795,
+      0.005126, 0.005496, 0.005917, 0.006404, 0.006923, 0.007491, 0.008173, 0.008938, 0.009714, 0.010494,
+      0.011337, 0.012232, 0.013196, 0.014229, 0.015316, 0.016455, 0.017574, 0.018735, 0.019981, 0.021366,
+      0.022903, 0.024615, 0.026504, 0.028648, 0.031071, 0.033802, 0.037010, 0.041158, 0.045461, 0.050346,
+      0.055633, 0.061757, 0.068358, 0.075420, 0.083364, 0.092680, 0.103459, 0.115502, 0.129018, 0.143810,
+      0.159458, 0.176551, 0.195360, 0.216286, 0.238799, 0.262268, 0.286291, 0.310944, 0.332325, 0.349036,
+      0.366568, 0.384960, 0.404252, 0.424488, 0.445712, 0.467998, 0.491398, 0.515968, 0.541766, 0.568854,
+      0.597297, 0.627162, 0.658520, 0.691446, 0.726018, 0.762319, 0.800435, 0.840457, 0.882480, 0.926604
+    ]
+    female: [
+      0.005125, 0.000392, 0.000229, 0.000188, 0.000155, 0.000133, 0.000115, 0.000105, 0.000100, 0.000098,
+      0.000101, 0.000111, 0.000126, 0.000152, 0.000188, 0.000229, 0.000273, 0.000323, 0.000372, 0.000410,
+      0.000441, 0.000476, 0.000513, 0.000546, 0.000582, 0.000609, 0.000641, 0.000683, 0.000740, 0.000808,
+      0.000878, 0.000947, 0.001018, 0.001089, 0.001154, 0.001209, 0.001263, 0.001347, 0.001438, 0.001533,
+      0.001643, 0.001742, 0.001845, 0.001954, 0.002075, 0.002187, 0.002306, 0.002438, 0.002595, 0.002791,
+      0.003030, 0.003288, 0.003554, 0.003847, 0.004172, 0.004532, 0.004923, 0.005365, 0.005815, 0.006333,
+      0.006923, 0.007555, 0.008220, 0.008881, 0.009514, 0.010188, 0.010880, 0.011659, 0.012543, 0.013581,
+      0.014769, 0.016153, 0.017705, 0.019495, 0.021533, 0.023846, 0.026458, 0.029700, 0.033135, 0.036982,
+      0.041183, 0.045959, 0.051282, 0.057262, 0.064107, 0.071752, 0.080490, 0.090566, 0.102204, 0.115178,
+      0.129176, 0.144229, 0.160353, 0.177635, 0.196502, 0.216846, 0.238750, 0.261359, 0.283899, 0.306491,
+      0.329680, 0.353333, 0.377300, 0.401416, 0.425501, 0.451031, 0.478092, 0.506778, 0.537185, 0.568854,
+      0.597297, 0.627162, 0.658520, 0.691446, 0.726018, 0.762319, 0.800435, 0.840457, 0.882480, 0.926604
+    ]
+adjustment:
+  method: proportional-hazards
+  normalization: population-average
+  factors:
+    - id: smoking
+      label: Smoking
+      input: smoking_status
+      type: categorical
+      missing: neutral
+      source: jha-2013
+      notes: >-
+        Shares of the population from NHANES 2017-2020. The "former, quit age
+        unknown" ratio (1.2) is the population-weighted average of the
+        quit-age groups.
+      levels:
+        - {value: never, hazard_ratio: 1.0, prevalence: 0.582}
+        - {value: former_quit_before_35, hazard_ratio: 1.0, prevalence: 0.129}
+        - {value: former_quit_35_44, hazard_ratio: 1.2, prevalence: 0.053}
+        - {value: former_quit_45_54, hazard_ratio: 1.5, prevalence: 0.039}
+        - {value: former_quit_55_plus, hazard_ratio: 1.7, prevalence: 0.029}
+        - {value: former, hazard_ratio: 1.2, prevalence: 0.0}
+        - {value: current, hazard_ratio: 2.9, prevalence: 0.169}
+    - id: bmi
+      label: Body mass index
+      input: bmi
+      type: banded
+      missing: neutral
+      source: gbmc-2016
+      notes: Shares of the population from NHANES 2017-2020 measured BMI.
+      bands:
+        - {max: 18.5, hazard_ratio: 1.47, prevalence: 0.014}
+        - {min: 18.5, max: 25, hazard_ratio: 1.0, prevalence: 0.249}
+        - {min: 25, max: 30, hazard_ratio: 1.11, prevalence: 0.317}
+        - {min: 30, max: 35, hazard_ratio: 1.44, prevalence: 0.219}
+        - {min: 35, max: 40, hazard_ratio: 1.92, prevalence: 0.111}
+        - {min: 40, hazard_ratio: 2.71, prevalence: 0.09}
+    - id: activity
+      label: Exercise
+      input: mvpa_minutes_per_week
+      type: banded
+      missing: neutral
+      source: arem-2015
+      notes: >-
+        Bands are the study's MET-hour categories converted to
+        moderate-equivalent minutes (0, under 7.5, 7.5-15, 15-22.5, 22.5-40,
+        40-75 and 75+ MET-hours). Shares from NHANES 2017-2020.
+      bands:
+        - {max: 1, hazard_ratio: 1.0, prevalence: 0.457}
+        - {min: 1, max: 150, hazard_ratio: 0.8, prevalence: 0.154}
+        - {min: 150, max: 300, hazard_ratio: 0.69, prevalence: 0.118}
+        - {min: 300, max: 450, hazard_ratio: 0.63, prevalence: 0.086}
+        - {min: 450, max: 800, hazard_ratio: 0.61, prevalence: 0.11}
+        - {min: 800, max: 1500, hazard_ratio: 0.61, prevalence: 0.055}
+        - {min: 1500, hazard_ratio: 0.68, prevalence: 0.019}
+tests:
+  # Values produced by the reference engine (OLM 0.1 method).
+  - name: Nothing provided reproduces the SSA baseline
+    profile: {age: 40, sex: male}
+    expect:
+      remaining_life_expectancy: {value: 38.5795, tolerance: 0.001}
+      combined_hazard_ratio: {value: 1, tolerance: 0.000001}
+  - name: Never smoked, BMI 23, 200 minutes of exercise, male aged 40
+    profile: {age: 40, sex: male, smoking_status: never, bmi: 23, mvpa_minutes_per_week: 200}
+    expect:
+      remaining_life_expectancy: {value: 47.2914, tolerance: 0.001}
+      median_age_at_death: {value: 89.9394, tolerance: 0.001}
+      combined_hazard_ratio: {value: 0.4349, tolerance: 0.0001}
+  - name: Current smoker, BMI 36, no exercise, male aged 40
+    profile: {age: 40, sex: male, smoking_status: current, bmi: 36, mvpa_minutes_per_week: 0}
+    expect:
+      remaining_life_expectancy: {value: 25.3023, tolerance: 0.001}
+      survival_to_80: {value: 0.1122, tolerance: 0.0001}
+      combined_hazard_ratio: {value: 3.5094, tolerance: 0.0001}
+  - name: Quit smoking at 45-54, BMI 27, 300 minutes, female aged 60
+    profile: {age: 60, sex: female, smoking_status: former_quit_45_54, bmi: 27, mvpa_minutes_per_week: 300}
+    expect:
+      remaining_life_expectancy: {value: 28.1445, tolerance: 0.001}
+      survival_to_90: {value: 0.4852, tolerance: 0.0001}
+      survival_to_100: {value: 0.0991, tolerance: 0.0001}

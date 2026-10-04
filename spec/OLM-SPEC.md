@@ -36,10 +36,10 @@ Models read inputs from a **PersonProfile**, defined by
 | --- | --- | --- | --- |
 | `age` | integer 0–119 | completed years | yes |
 | `sex` | `male` \| `female` | as recorded in the baseline data | yes |
-| `smoking_status` | `never` \| `former` \| `current` | | no |
+| `smoking_status` | `never`, `former_quit_before_35`, `former_quit_35_44`, `former_quit_45_54`, `former_quit_55_plus`, `former` (quit age unknown), `current` | | no |
 | `bmi` | number 10–80 | kg/m² | no |
 | `systolic_bp` | number 60–260 | mmHg | no |
-| `mvpa_minutes_per_week` | number 0–5000 | minutes of moderate-to-vigorous activity | no |
+| `mvpa_minutes_per_week` | number 0–5000 | leisure-time moderate-equivalent minutes (vigorous minutes count twice) | no |
 | `alcohol_drinks_per_week` | number 0–200 | standard drinks (≈14 g ethanol) | no |
 
 Fields have fixed names and units, so the same profile can be run through any
@@ -98,10 +98,10 @@ adjustment:
       type: categorical
       missing: neutral                # or: required
       source: some-study
-      levels:
-        - {value: never,   hazard_ratio: 1.0, prevalence: 0.55}
-        - {value: former,  hazard_ratio: 1.3, prevalence: 0.30}
-        - {value: current, hazard_ratio: 2.5, prevalence: 0.15}
+      levels:                         # one per allowed value (abridged here)
+        - {value: never,   hazard_ratio: 1.0, prevalence: 0.58}
+        - {value: former_quit_45_54, hazard_ratio: 1.5, prevalence: 0.04}
+        - {value: current, hazard_ratio: 2.9, prevalence: 0.17}
     - id: bmi
       label: Body mass index
       input: bmi
@@ -146,7 +146,7 @@ A valid model MUST also satisfy:
 2. All `baseline.qx` tables have the same length.
 3. Factor `id`s are unique, and no two factors read the same input.
 4. `smoking_status` factors are `categorical` and list exactly the values
-   `never`, `former` and `current`; numeric inputs use `banded` factors.
+   allowed by the PersonProfile schema; numeric inputs use `banded` factors.
 5. Bands are in ascending order. Only the first band omits `min` and only the
    last omits `max`. Each band's `max` equals the next band's `min`.
 6. With `population-average` normalization, every level or band has a

@@ -11,12 +11,13 @@ import {
 
 const modelsDir = new URL("../../models/", import.meta.url);
 const modelFiles = readdirSync(modelsDir).filter((f) => f.endsWith(".olm"));
-const load = (file: string): OlmModel => parseModel(readFileSync(new URL(file, modelsDir), "utf8"));
+const fixturesDir = new URL("./fixtures/", import.meta.url);
+const load = (file: string, dir: URL = modelsDir): OlmModel => parseModel(readFileSync(new URL(file, dir), "utf8"));
 
 describe("bundled models", () => {
   it("finds the example models", () => {
     expect(modelFiles).toContain("us-ssa-2023-period.olm");
-    expect(modelFiles).toContain("illustrative-lifestyle.olm");
+    expect(modelFiles).toContain("us-lifestyle.olm");
   });
 
   describe.each(modelFiles)("%s", (file) => {
@@ -37,9 +38,16 @@ describe("bundled models", () => {
   });
 });
 
+describe("illustrative fixture", () => {
+  it("passes its own reference tests", () => {
+    const failures = runReferenceTests(load("illustrative-lifestyle.olm", fixturesDir)).filter((c) => !c.passed);
+    expect(failures).toEqual([]);
+  });
+});
+
 describe("calculate", () => {
   const baseline = load("us-ssa-2023-period.olm");
-  const lifestyle = load("illustrative-lifestyle.olm");
+  const lifestyle = load("illustrative-lifestyle.olm", fixturesDir);
 
   it("returns a survival curve starting at 1 and decreasing", () => {
     const result = calculate(baseline, { age: 30, sex: "female" });
@@ -105,7 +113,7 @@ describe("calculate", () => {
 });
 
 describe("validation", () => {
-  const text = readFileSync(new URL("illustrative-lifestyle.olm", modelsDir), "utf8");
+  const text = readFileSync(new URL("illustrative-lifestyle.olm", fixturesDir), "utf8");
   const base = (): OlmModel => structuredClone(parseModel(text));
   const errorsFor = (model: unknown): string[] => {
     try {
@@ -154,7 +162,7 @@ describe("validation", () => {
   it("rejects a categorical factor missing a level", () => {
     const model = base();
     const factor = model.adjustment!.factors[0]!;
-    if (factor.type === "categorical") factor.levels = factor.levels.slice(0, 2);
+    if (factor.type === "categorical") factor.levels = factor.levels.filter((l) => l.value !== "current");
     expect(errorsFor(model).join()).toMatch(/no level for "current"/);
   });
 });
