@@ -54,6 +54,18 @@ export default function About() {
         <a href={`${REPO_URL}/blob/main/spec/OLM-SPEC.md`}>OLM specification</a>.
       </p>
 
+      <h2 id="equivalent-age">Equivalent age</h2>
+      <p>
+        Your equivalent age is the age of an average person of your sex who has the same remaining life
+        expectancy as you under the model. If the model gives a 29-year-old man 57.7 more years, and an average
+        man has 57.7 years left at about 19, his equivalent age is 19. With average answers, it equals your
+        real age.
+      </p>
+      <p>
+        It is a way of expressing the same estimate, read straight from the national life table. It is not a
+        measurement of your body, and it is not a &quot;biological age&quot; from blood tests or DNA.
+      </p>
+
       <h2>What the results cannot tell you</h2>
       <ul>
         <li>

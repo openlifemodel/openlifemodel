@@ -94,6 +94,33 @@ function populationMean(factor: Factor): number {
   return entries.reduce((sum, e) => sum + (e.prevalence ?? 0) * e.hazard_ratio, 0);
 }
 
+// Average remaining life expectancy at each age of a table, cached per table.
+const baselineCache = new WeakMap<number[], number[]>();
+
+function baselineExpectancies(qx: number[], mu: number[], startAge: number): number[] {
+  let table = baselineCache.get(qx);
+  if (!table) {
+    table = mu.map((_, i) => project(mu, startAge, startAge + i, 1).remaining);
+    baselineCache.set(qx, table);
+  }
+  return table;
+}
+
+/**
+ * Equivalent age: the age at which an average person of the same sex, under
+ * the same baseline, has the same remaining life expectancy (spec section 6).
+ * Interpolated linearly between whole ages; clamped to the table's ages.
+ */
+function equivalentAge(baseline: number[], startAge: number, remaining: number): number {
+  if (remaining >= (baseline[0] as number)) return startAge;
+  for (let i = 0; i < baseline.length - 1; i++) {
+    const here = baseline[i] as number;
+    const next = baseline[i + 1] as number;
+    if (here >= remaining && remaining > next) return startAge + i + (here - remaining) / (here - next);
+  }
+  return startAge + baseline.length - 1;
+}
+
 /** A factor's input value: a standard profile field, or an answer to a custom input. */
 function readInput(profile: PersonProfile, input: string): string | number | null {
   if (STANDARD_INPUTS.has(input)) return (profile[input as keyof PersonProfile] as string | number | undefined) ?? null;
@@ -171,6 +198,7 @@ export function calculate(model: OlmModel, input: unknown): CalculationResult {
     remaining_life_expectancy: full.remaining,
     expected_age_at_death: profile.age + full.remaining,
     median_age_at_death: full.medianAge,
+    equivalent_age: equivalentAge(baselineExpectancies(qx, mu, startAge), startAge, full.remaining),
     survival_to: survivalTo,
     combined_hazard_ratio: combined,
     survival_curve: full.curve,

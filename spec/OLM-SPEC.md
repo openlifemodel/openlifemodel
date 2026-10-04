@@ -224,10 +224,17 @@ Given a model and a profile with age `a` and sex `s`:
 6. **Median age at death** is the age `t` where `S(t) = 0.5`, found exactly
    within the year where survival crosses one half:
    `t = x + ln(S(x) / 0.5) / (H·μₓ)`.
-7. **Survival to age 80, 90 and 100** is `S` at that age (from the tail
+7. **Equivalent age** is the age `x*` at which an average person of the same
+   sex under this baseline (`H = 1`) has the same remaining life expectancy
+   `e`. Compute the baseline remaining life expectancy `e₀(x)` at each whole
+   age `x₀ … ω` and interpolate linearly between the two whole ages whose
+   values bracket `e`. If `e` is above `e₀(x₀)` the result is `x₀`; if it is
+   below `e₀(ω)` the result is `ω`. A person with average exposure therefore
+   has an equivalent age equal to their age.
+8. **Survival to age 80, 90 and 100** is `S` at that age (from the tail
    formula if beyond `ω + 1`), or undefined if the person is already at or
    past that age.
-8. **Factor contribution** in life-years is `e` minus the remaining life
+9. **Factor contribution** in life-years is `e` minus the remaining life
    expectancy recomputed with that factor's HR set to 1. Contributions are
    not additive: they need not sum to the total difference from the baseline.
    Implementations MAY also report each factor's best and worst possible
@@ -251,7 +258,7 @@ tests:
 
 An implementation conforms to OLM 0.2 for a model if every expected output
 lies within `tolerance` of its computed value. Supported outputs:
-`remaining_life_expectancy`, `median_age_at_death`, `survival_to_80`,
+`remaining_life_expectancy`, `median_age_at_death`, `equivalent_age`, `survival_to_80`,
 `survival_to_90`, `survival_to_100` and `combined_hazard_ratio`.
 
 Authors SHOULD use independently published values where they exist (for

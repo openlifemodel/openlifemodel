@@ -500,6 +500,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               quitNow={outcome.quitNow}
               inputs={model?.inputs ?? []}
               who={`${profile.age}-year-old ${sexWord}`}
+              sexWord={sexWord}
             />
             )}
           </div>
@@ -657,30 +658,40 @@ function quitBandFor(age: number): NonNullable<PersonProfile["smoking_status"]> 
   return "former_quit_55_plus";
 }
 
-function Results({ result, population, quitNow, who, inputs }: Outcome & { who: string; inputs: CustomInput[] }) {
+function Results({
+  result,
+  population,
+  quitNow,
+  who,
+  sexWord,
+  inputs,
+}: Outcome & { who: string; sexWord: string; inputs: CustomInput[] }) {
   const diff = result.remaining_life_expectancy - population.remaining_life_expectancy;
   const factors = result.factors.filter((f) => f.value !== null);
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="text-sm font-medium text-muted">Estimated age at death</div>
-        <div className="mt-1 flex flex-wrap items-end gap-x-4 gap-y-2">
-          <div className="text-6xl font-semibold tracking-tight tabular-nums text-fg">{fmt(result.expected_age_at_death)}</div>
-          {Math.abs(diff) >= 0.05 ? (
-            <span
-              className={`mb-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium ${diff > 0 ? "bg-good-soft text-good" : "bg-bad-soft text-bad"}`}
-            >
-              {diff > 0 ? "▲" : "▼"} {fmt(Math.abs(diff))} years vs average
-            </span>
-          ) : (
-            <span className="mb-2 text-sm text-muted">Average for a {who}</span>
-          )}
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div>
+          <div className="text-sm font-medium text-muted">Estimated age at death</div>
+          <div className="mt-1 flex flex-wrap items-end gap-x-4 gap-y-2">
+            <div className="text-6xl font-semibold tracking-tight tabular-nums text-fg">{fmt(result.expected_age_at_death)}</div>
+            {Math.abs(diff) >= 0.05 ? (
+              <span
+                className={`mb-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium ${diff > 0 ? "bg-good-soft text-good" : "bg-bad-soft text-bad"}`}
+              >
+                {diff > 0 ? "▲" : "▼"} {fmt(Math.abs(diff))} years vs average
+              </span>
+            ) : (
+              <span className="mb-2 text-sm text-muted">Average for a {who}</span>
+            )}
+          </div>
         </div>
-        <p className="mt-1 text-sm text-muted">
-          {Math.abs(diff) >= 0.05 ? `Compared with an average ${who}. ` : ""}A statistical average, not a prediction for you.
-        </p>
+        <EquivalentAge age={result.age} equivalent={result.equivalent_age} />
       </div>
+      <p className="-mt-2 text-sm text-muted">
+        {equivalentSentence(result, sexWord)} A statistical average, not a prediction for you.
+      </p>
 
       <dl className="grid grid-cols-3 divide-x divide-line rounded-xl border border-line bg-surface-2">
         <Stat label="Years remaining" value={fmt(result.remaining_life_expectancy)} />
@@ -827,6 +838,50 @@ function FactorList({ factors, quitNow, inputs }: { factors: FactorResult[]; qui
         Ranges hold your other answers fixed. Effects don&apos;t add up exactly because risks multiply, and these
         are associations from studies, not guarantees for any one person.
       </p>
+    </div>
+  );
+}
+
+/** Equivalent age, shown as a whole number; under 18 is shown as such for adults. */
+function displayEquivalent(age: number, equivalent: number): string {
+  return age >= 18 && equivalent < 18 ? "<18" : String(Math.round(equivalent));
+}
+
+function equivalentSentence(result: CalculationResult, sexWord: string): string {
+  const shown = displayEquivalent(result.age, result.equivalent_age);
+  if (Math.round(result.equivalent_age) === result.age) {
+    return `Your remaining life expectancy is average for your age.`;
+  }
+  // Non-breaking hyphens keep "19-year-old" on one line.
+  const who = shown === "<18" ? `${sexWord === "woman" ? "girl" : "boy"} under 18` : `${shown}\u2011year\u2011old ${sexWord}`;
+  return `You have the remaining life expectancy of an average ${who}.`;
+}
+
+function EquivalentAge({ age, equivalent }: { age: number; equivalent: number }) {
+  const shown = displayEquivalent(age, equivalent);
+  const younger = Math.round(equivalent) < age;
+  const older = Math.round(equivalent) > age;
+  return (
+    <div className="rounded-xl border border-line bg-surface-2 px-4 py-3 sm:min-w-40">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-muted">
+        Equivalent age
+        <a
+          href="/about/#equivalent-age"
+          className="grid h-4 w-4 place-items-center rounded-full border border-line-strong text-[10px] leading-none text-faint hover:text-fg"
+          aria-label="What is equivalent age?"
+          title="What is equivalent age?"
+        >
+          ?
+        </a>
+      </div>
+      <div className="mt-0.5 flex items-baseline gap-2">
+        <span
+          className={`text-4xl font-semibold tracking-tight tabular-nums ${younger ? "text-good" : older ? "text-bad" : "text-fg"}`}
+        >
+          {shown}
+        </span>
+        <span className="text-sm text-muted">you&apos;re {age}</span>
+      </div>
     </div>
   );
 }
