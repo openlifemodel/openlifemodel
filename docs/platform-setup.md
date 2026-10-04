@@ -19,6 +19,9 @@ as any change to it. No secrets, IP addresses or account IDs here.
 - `openlifemodel.com` is registered with Cloudflare Registrar and uses
   Cloudflare DNS.
 - DNSSEC: enabled through Cloudflare (registrar adds the DS record automatically).
+- `www.openlifemodel.com` 301-redirects to `https://openlifemodel.com` (same
+  path and query) through a Cloudflare Single Redirect rule; the apex is the
+  canonical host.
 - DMARC: `p=reject`, because no mail is sent as this domain yet. Relax it when outbound email (SES) is added.
 - Email: Cloudflare Email Routing forwards `info@openlifemodel.com` to the
   owner's mailbox. No outbound email is sent by the project yet.
