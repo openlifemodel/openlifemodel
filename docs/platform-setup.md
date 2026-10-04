@@ -21,9 +21,13 @@ as any change to it. No secrets, IP addresses or account IDs here.
 
 ## Hosting
 
-- MVP: static site on Cloudflare Pages with the custom domain
-  `openlifemodel.com`. The `*.pages.dev` hostname redirects to the custom
-  domain and is not indexed. (Not yet deployed.)
+- MVP: static site (`web/`, Next.js static export to `web/out`) on Cloudflare
+  Pages with the custom domain `openlifemodel.com`. The `*.pages.dev`
+  hostname is served with `X-Robots-Tag: noindex` (`web/public/_headers`) and
+  every page declares its `openlifemodel.com` URL as canonical. (Not yet
+  deployed.)
+- Self-hosting: the root `Dockerfile` builds the same site and serves it with
+  unprivileged nginx on port 8080. CI builds and smoke-tests the image.
 - The reference calculator runs entirely in the browser; no server receives
   user health data.
 - A Hetzner Cloud server (Helsinki) is reserved for the later hosted product

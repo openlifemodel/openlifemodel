@@ -1,0 +1,10 @@
+# Cloudflare Pages headers. The pages.dev preview hostname must never be
+# indexed; openlifemodel.com is the canonical site.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  X-Frame-Options: DENY
