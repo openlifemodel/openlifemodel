@@ -19,7 +19,8 @@ const INTERESTS = [
   { id: "models", label: "Building and sharing my own models" },
 ] as const;
 
-const PITCH = "Accounts are coming: track your estimate over time, add lab results and connect wearables.";
+const HEADING = "Save your history and track your changes";
+const PITCH = "Track your estimate over time, add lab results and connect wearables.";
 const SOURCE_KEY = "olm.source";
 
 /** Where this visitor came from: ?ref=… on the landing URL, else the referring site. Kept for this visit only. */
@@ -48,19 +49,19 @@ async function post(path: string, body: Record<string, unknown>): Promise<Record
   return data;
 }
 
-/** A slim banner under the calculator that leads to the early-access page. */
+/** A centred call to action at the bottom of the home page, leading to the early-access page. */
 export function EarlyAccessBanner() {
   useEffect(() => {
     visitSource(); // remember where the visitor landed from before they navigate
   }, []);
   if (!EARLY_ACCESS_ENABLED) return null;
   return (
-    <section className="card flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div>
-        <h2 className="font-semibold tracking-tight">Save your history and watch it change</h2>
-        <p className="mt-1 text-sm text-muted">{PITCH}</p>
-      </div>
-      <Link href="/early-access/" className="btn btn-primary !h-11 shrink-0 !px-5 !text-sm">
+    <section className="card mx-auto max-w-2xl px-6 py-10 text-center sm:px-10" aria-labelledby="early-access-cta">
+      <h2 id="early-access-cta" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        {HEADING}
+      </h2>
+      <p className="mx-auto mt-3 max-w-md text-muted">{PITCH}</p>
+      <Link href="/early-access/" className="btn btn-primary mt-6 !h-12 !px-8 !text-base">
         Join early access
       </Link>
     </section>
@@ -111,15 +112,15 @@ export function EarlyAccessForm() {
 
   if (step === "joined" || step === "saving" || step === "thanks") {
     return (
-      <div aria-live="polite">
+      <div aria-live="polite" className="text-center">
         <h1 className="text-3xl font-semibold tracking-tight">You&apos;re on the list</h1>
         <p className="mt-3 text-muted">
           We&apos;ll email <strong className="text-fg">{email}</strong> when accounts open.
         </p>
         {step === "thanks" ? (
-          <p className="mt-8 rounded-xl bg-accent-soft p-4 text-sm">Thanks, that helps us decide what to build first.</p>
+          <p className="mx-auto mt-8 max-w-md rounded-xl bg-accent-soft p-4 text-sm">Thanks, that helps us decide what to build first.</p>
         ) : (
-          <form className="card mt-8 p-5 sm:p-6" onSubmit={sendInterests}>
+          <form className="card mx-auto mt-8 max-w-md p-5 text-left sm:p-6" onSubmit={sendInterests}>
             <fieldset>
               <legend className="font-semibold">Help us decide what to build first</legend>
               <p className="mt-1 text-sm text-muted">What would you use it for? Tick any (optional).</p>
@@ -151,18 +152,18 @@ export function EarlyAccessForm() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Save your history and watch it change</h1>
-      <p className="mt-3 max-w-xl text-lg leading-relaxed text-muted">{PITCH}</p>
-      <form className="mt-8 max-w-md" onSubmit={join}>
+    <div className="text-center">
+      <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{HEADING}</h1>
+      <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">{PITCH}</p>
+      <form className="mx-auto mt-8 max-w-md" onSubmit={join}>
         <label className="block">
-          <span className="label">Email</span>
+          <span className="sr-only">Email address</span>
           <input
             type="email"
             required
             autoComplete="email"
-            placeholder="you@example.com"
-            className="field !h-12 !text-base"
+            placeholder="Enter your email address"
+            className="field !h-12 text-center !text-base"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

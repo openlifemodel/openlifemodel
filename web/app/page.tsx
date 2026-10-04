@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Calculator } from "@/components/Calculator";
+import { EarlyAccessBanner } from "@/components/EarlyAccess";
 import { lifeTableLibrary } from "@/lib/life-tables";
 import { bundledModels } from "@/lib/models";
 import { REPO_URL } from "@/lib/site";
@@ -86,6 +87,10 @@ export default function Home() {
           .
         </p>
       </section>
+
+      <div className="mt-16">
+        <EarlyAccessBanner />
+      </div>
     </>
   );
 }

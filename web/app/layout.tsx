@@ -40,7 +40,7 @@ function Logo() {
   );
 }
 
-const navLink = "rounded-lg px-2.5 py-1.5 text-muted transition hover:bg-surface-2 hover:text-fg";
+const navLink = "whitespace-nowrap rounded-lg px-1.5 py-1.5 text-muted transition hover:bg-surface-2 hover:text-fg sm:px-2.5";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -56,20 +56,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <header className="sticky top-0 z-40 border-b border-line bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] backdrop-blur-md">
-          <nav className="mx-auto flex h-14 max-w-6xl items-center gap-1 px-4 text-sm sm:gap-2">
-            <Link href="/" className="mr-2 flex items-center gap-2 font-semibold tracking-tight sm:mr-4">
+          <nav className="mx-auto flex h-14 max-w-6xl items-center gap-0.5 px-4 text-sm sm:gap-2">
+            <Link href="/" className="mr-1 flex shrink-0 items-center gap-2 font-semibold tracking-tight sm:mr-4">
               <Logo />
-              <span className="hidden min-[380px]:inline">OpenLifeModel</span>
+              <span className="hidden sm:inline">OpenLifeModel</span>
             </Link>
-            <Link href="/models/" className={navLink}>
+            <Link href="/models/" className={`${navLink} max-[359px]:hidden`}>
               Models
             </Link>
             <Link href="/about/" className={navLink}>
               How it works
             </Link>
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
               {EARLY_ACCESS_ENABLED && (
-                <Link href="/early-access/" className="rounded-lg px-2.5 py-1.5 font-medium text-accent-strong transition hover:bg-accent-soft">
+                <Link href="/early-access/" className="whitespace-nowrap rounded-lg px-1.5 py-1.5 font-medium text-accent-strong transition hover:bg-accent-soft sm:px-2.5">
                   Early access
                 </Link>
               )}

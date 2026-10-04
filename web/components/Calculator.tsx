@@ -19,7 +19,6 @@ import { LEVEL_LABELS } from "@/lib/labels";
 import { editedCopy, findProblems } from "@/lib/draft-model";
 import type { LibraryTable } from "@/lib/life-tables";
 import { ModelEditorPanel } from "./editor/ModelEditorPanel";
-import { EarlyAccessBanner } from "./EarlyAccess";
 import { ModelCard } from "./ModelCard";
 import { SummaryBar } from "./SummaryBar";
 import { SurvivalChart } from "./SurvivalChart";
@@ -569,8 +568,6 @@ export function Calculator({ models, lifeTables }: { models: OlmModel[]; lifeTab
           e.target.value = "";
         }}
       />
-
-      <EarlyAccessBanner />
 
       {editorOpen && draftModel && (
         <ModelEditorPanel
