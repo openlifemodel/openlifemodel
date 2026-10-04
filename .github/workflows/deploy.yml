@@ -3,9 +3,21 @@ name: Deploy
 # Publishes openlifemodel.com whenever main changes. main only changes through
 # reviewed PRs with passing checks, and this workflow never runs for pull
 # requests, so forks cannot reach the deploy credentials.
+# Only changes that affect the published site trigger a deploy, so README and
+# docs edits do not use up Cloudflare Pages deployments.
 on:
   push:
     branches: [main]
+    paths:
+      - "web/**"
+      - "engine/**"
+      - "models/**"
+      - "spec/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:

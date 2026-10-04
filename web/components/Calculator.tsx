@@ -25,7 +25,9 @@ interface Entry {
   model: OlmModel;
 }
 
-type Draft = Record<"age" | "sex" | FactorInput | "height_cm" | "weight_kg", string>;
+type BodyField = "height_cm" | "weight_kg" | "height_ft" | "height_in" | "weight_lb";
+type Draft = Record<"age" | "sex" | FactorInput | BodyField | "units", string>;
+type Units = "metric" | "us";
 
 const EMPTY_DRAFT: Draft = {
   age: "40",
@@ -34,6 +36,10 @@ const EMPTY_DRAFT: Draft = {
   bmi: "",
   height_cm: "",
   weight_kg: "",
+  height_ft: "",
+  height_in: "",
+  weight_lb: "",
+  units: "",
   systolic_bp: "",
   mvpa_minutes_per_week: "",
   alcohol_drinks_per_week: "",
@@ -82,20 +88,72 @@ function friendly(errors: string[]): string[] {
   });
 }
 
-function toProfile(draft: Draft): { profile: PersonProfile; bmiFromHeight: number | null } {
+/** BMI from the height and weight helper, in whichever units are selected; null if incomplete. */
+function bmiFromBody(draft: Draft): number | null {
+  const num = (v: string) => (v.trim() === "" ? NaN : Number(v));
+  let metres: number;
+  let kg: number;
+  if (draft.units === "us") {
+    const inches = num(draft.height_ft || "0") * 12 + num(draft.height_in || "0");
+    metres = inches * 0.0254;
+    kg = num(draft.weight_lb) * 0.45359237;
+    if (draft.height_ft.trim() === "" && draft.height_in.trim() === "") return null;
+  } else {
+    metres = num(draft.height_cm) / 100;
+    kg = num(draft.weight_kg);
+  }
+  if (!(metres > 0.5 && metres < 2.6 && kg > 15 && kg < 350)) return null;
+  return Math.round((kg / (metres * metres)) * 10) / 10;
+}
+
+/** Convert the helper's values when the units are switched, so nothing is lost. */
+function switchUnits(draft: Draft, units: Units): Draft {
+  if (draft.units === units) return draft;
+  const round = (n: number, dp = 0) => String(Math.round(n * 10 ** dp) / 10 ** dp);
+  const next = { ...draft, units };
+  if (units === "us") {
+    const cm = Number(draft.height_cm);
+    const kg = Number(draft.weight_kg);
+    if (draft.height_cm && cm > 0) {
+      const inches = cm / 2.54;
+      next.height_ft = String(Math.floor(inches / 12));
+      next.height_in = round(inches % 12);
+    }
+    if (draft.weight_kg && kg > 0) next.weight_lb = round(kg / 0.45359237);
+  } else {
+    const inches = Number(draft.height_ft || 0) * 12 + Number(draft.height_in || 0);
+    const lb = Number(draft.weight_lb);
+    if ((draft.height_ft || draft.height_in) && inches > 0) next.height_cm = round(inches * 2.54);
+    if (draft.weight_lb && lb > 0) next.weight_kg = round(lb * 0.45359237, 1);
+  }
+  return next;
+}
+
+/** US visitors (by browser locale) start in US units; everyone else in metric. */
+function defaultUnits(): Units {
+  try {
+    const locale = new Intl.Locale(navigator.language);
+    return ["US", "LR", "MM"].includes(locale.maximize().region ?? "") ? "us" : "metric";
+  } catch {
+    return "metric";
+  }
+}
+
+function toProfile(draft: Draft): PersonProfile {
   const profile: PersonProfile = { age: Number(draft.age), sex: draft.sex as PersonProfile["sex"] };
   if (draft.smoking_status) profile.smoking_status = draft.smoking_status as NonNullable<PersonProfile["smoking_status"]>;
   for (const key of Object.keys(NUMERIC_INPUTS) as (keyof typeof NUMERIC_INPUTS)[]) {
     if (draft[key].trim() !== "") profile[key] = Number(draft[key]);
   }
-  let bmiFromHeight: number | null = null;
-  const h = Number(draft.height_cm) / 100;
-  const w = Number(draft.weight_kg);
-  if (profile.bmi === undefined && h > 0 && w > 0) {
-    bmiFromHeight = Math.round((w / (h * h)) * 10) / 10;
-    profile.bmi = bmiFromHeight;
+  if (profile.bmi === undefined) {
+    const bmi = bmiFromBody(draft);
+    if (bmi !== null) profile.bmi = bmi;
   }
-  return { profile, bmiFromHeight };
+  return profile;
+}
+
+function pickBody(d: Draft) {
+  return { cm: d.height_cm, kg: d.weight_kg, ft: d.height_ft, inch: d.height_in, lb: d.weight_lb };
 }
 
 function errorText(err: unknown): string[] {
@@ -130,9 +188,11 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setDraft({ ...EMPTY_DRAFT, ...(JSON.parse(saved) as Partial<Draft>) });
+      const restoredDraft = saved ? { ...EMPTY_DRAFT, ...(JSON.parse(saved) as Partial<Draft>) } : EMPTY_DRAFT;
+      setDraft({ ...restoredDraft, units: restoredDraft.units || defaultUnits() });
     } catch {
       // Storage unavailable: start from the defaults.
+      setDraft((d) => ({ ...d, units: d.units || defaultUnits() }));
     }
     setRestored(true);
   }, []);
@@ -148,7 +208,8 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   const entry = entries.find((e) => e.key === selected) ?? entries[0];
   const model = entry?.model;
   const usedInputs = new Set(model?.adjustment?.factors.map((f) => f.input) ?? []);
-  const { profile, bmiFromHeight } = toProfile(draft);
+  const profile = toProfile(draft);
+  const bodyBmi = bmiFromBody(draft);
 
   const modelErrors = useMemo(() => {
     if (!model || entry?.origin !== "edited") return [];
@@ -174,6 +235,14 @@ export function Calculator({ models }: { models: OlmModel[] }) {
 
   const set = (key: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setDraft((d) => ({ ...d, [key]: e.target.value }));
+
+  // Height and weight fill in the BMI box, so people can see and keep the number.
+  const setBody = (key: BodyField) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDraft((d) => {
+      const next = { ...d, [key]: e.target.value };
+      const bmi = bmiFromBody(next);
+      return bmi === null ? next : { ...next, bmi: String(bmi) };
+    });
 
   const onEdit = (next: OlmModel) => {
     if (!entry) return;
@@ -288,31 +357,73 @@ export function Calculator({ models }: { models: OlmModel[] }) {
                         max={meta.max}
                         className="field"
                         value={draft[k]}
-                        placeholder={k === "bmi" && bmiFromHeight !== null ? String(bmiFromHeight) : ""}
+                        placeholder={k === "bmi" ? "e.g. 24" : ""}
                         onChange={set(k)}
                       />
                       <span>{meta.unit}</span>
                     </span>
                   </label>
                   {meta.hint && <p className="hint">{meta.hint}</p>}
-                  {k === "bmi" && draft.bmi === "" && (
-                    <details className="mt-2" open={draft.height_cm !== "" || draft.weight_kg !== ""}>
+                  {k === "bmi" && (
+                    <details className="mt-2" open={Object.values(pickBody(draft)).some((v) => v !== "")}>
                       <summary className="cursor-pointer text-xs font-medium text-accent-strong">
                         Don&apos;t know it? Use height and weight
                       </summary>
-                      <div className="mt-2 grid grid-cols-2 gap-3">
-                        <label className="unit-field block">
-                          <span className="sr-only">Height</span>
-                          <input type="number" inputMode="decimal" min="50" max="250" className="field" placeholder="Height" value={draft.height_cm} onChange={set("height_cm")} />
-                          <span>cm</span>
-                        </label>
-                        <label className="unit-field block">
-                          <span className="sr-only">Weight</span>
-                          <input type="number" inputMode="decimal" min="20" max="300" className="field" placeholder="Weight" value={draft.weight_kg} onChange={set("weight_kg")} />
-                          <span>kg</span>
-                        </label>
+                      <div className="mt-2 space-y-2">
+                        <div className="segmented max-w-56 text-xs" role="radiogroup" aria-label="Units">
+                          {(["metric", "us"] as const).map((u) => (
+                            <label key={u}>
+                              <input
+                                type="radio"
+                                name="units"
+                                value={u}
+                                checked={(draft.units || "metric") === u}
+                                onChange={() => setDraft((d) => switchUnits({ ...d, units: d.units || "metric" }, u))}
+                              />
+                              <span className="!py-1 !text-xs">{u === "metric" ? "cm / kg" : "ft, in / lb"}</span>
+                            </label>
+                          ))}
+                        </div>
+                        {draft.units === "us" ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            <label className="unit-field block">
+                              <span className="sr-only">Height, feet</span>
+                              <input type="number" inputMode="numeric" min="2" max="8" className="field !pr-8" placeholder="5" value={draft.height_ft} onChange={setBody("height_ft")} />
+                              <span>ft</span>
+                            </label>
+                            <label className="unit-field block">
+                              <span className="sr-only">Height, inches</span>
+                              <input type="number" inputMode="decimal" min="0" max="11.9" className="field !pr-8" placeholder="9" value={draft.height_in} onChange={setBody("height_in")} />
+                              <span>in</span>
+                            </label>
+                            <label className="unit-field block">
+                              <span className="sr-only">Weight, pounds</span>
+                              <input type="number" inputMode="decimal" min="40" max="700" className="field !pr-8" placeholder="170" value={draft.weight_lb} onChange={setBody("weight_lb")} />
+                              <span>lb</span>
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="unit-field block">
+                              <span className="sr-only">Height in centimetres</span>
+                              <input type="number" inputMode="decimal" min="50" max="250" className="field" placeholder="Height" value={draft.height_cm} onChange={setBody("height_cm")} />
+                              <span>cm</span>
+                            </label>
+                            <label className="unit-field block">
+                              <span className="sr-only">Weight in kilograms</span>
+                              <input type="number" inputMode="decimal" min="20" max="300" className="field" placeholder="Weight" value={draft.weight_kg} onChange={setBody("weight_kg")} />
+                              <span>kg</span>
+                            </label>
+                          </div>
+                        )}
+                        <p className="hint !mt-1">
+                          {bodyBmi === null
+                            ? "BMI is weight divided by height squared. Enter both and we'll work it out."
+                            : Number(draft.bmi) === bodyBmi
+                              ? `That's a BMI of ${bodyBmi}, filled in above.`
+                              : `Your height and weight give a BMI of ${bodyBmi}.`}
+                        </p>
                       </div>
-                      {bmiFromHeight !== null && <p className="hint">Your BMI: {bmiFromHeight}</p>}
                     </details>
                   )}
                 </div>
