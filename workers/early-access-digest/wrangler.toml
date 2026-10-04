@@ -1,0 +1,18 @@
+# Hourly early-access digest for openlifemodel.com. Deploy from this folder:
+#   wrangler deploy
+# The recipient is a secret, set once with: wrangler secret put DIGEST_TO
+name = "openlifemodel-early-access-digest"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[triggers]
+crons = ["0 * * * *"]
+
+[[d1_databases]]
+binding = "EARLY_ACCESS_DB"
+database_name = "openlifemodel-early-access"
+database_id = "b203fe6f-41e3-4cd3-ac53-a7919113fcdd"
+
+[[send_email]]
+name = "DIGEST"
