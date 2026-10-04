@@ -15,7 +15,8 @@ export default function Privacy() {
 
       <p>
         The short version: the calculator works out your results in your own browser, and this site never
-        sends your answers to a server. There are no accounts, no cookies and no ads.
+        sends your answers to a server. There are no accounts, no cookies and no ads. If you choose to join the
+        early-access list, we keep your email to tell you when accounts open.
       </p>
 
       <h2>Your answers</h2>
@@ -32,6 +33,16 @@ export default function Privacy() {
           Model files you import or export stay on your device unless you choose to share them.
         </li>
       </ul>
+
+      <h2 id="early-access">Early-access list</h2>
+      <p>
+        If you join the early-access list, we store your email address, the date, the boxes you ticked about what you
+        would use accounts for, and the site that referred you (for example news.ycombinator.com). We do not store
+        your IP address or anything you entered in the calculator. The list is kept in a Cloudflare database in
+        Western Europe and used only to email you when accounts open. Every email will include a way to unsubscribe,
+        and you can ask us to delete your entry at any time by writing to{" "}
+        <a href="mailto:info@openlifemodel.com">info@openlifemodel.com</a>.
+      </p>
 
       <h2>Visit statistics</h2>
       <p>
