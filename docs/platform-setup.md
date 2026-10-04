@@ -55,6 +55,14 @@ as any change to it. No secrets, IP addresses or account IDs here.
   copies do not show it. Count sign-ups with:
   `wrangler d1 execute openlifemodel-early-access --remote --command "SELECT source, COUNT(*) FROM early_access GROUP BY source"`
   (token needs D1 access).
+- Early-access digest: the Worker `openlifemodel-early-access-digest`
+  (`workers/early-access-digest/`) runs hourly (cron `0 * * * *`) and emails
+  the owner the sign-ups since its last run, from `digest@openlifemodel.com`
+  through Cloudflare Email Routing; nothing is sent when there are none. It
+  remembers its last run in the D1 table `digest_state`. The recipient is the
+  Worker secret `DIGEST_TO`, which must be a verified Email Routing
+  destination. Deploy changes manually from that folder with `wrangler deploy`
+  (token needs Workers Scripts edit); it is not part of the site deploy.
 - Analytics: Cloudflare Web Analytics (RUM) on `openlifemodel.com`, with the
   beacon injected automatically at Cloudflare's edge (not in the code), for
   all regions. It sets no cookies and records page, referrer, country and
