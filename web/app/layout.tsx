@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
+import { ContactEmail } from "@/components/ContactEmail";
 import { EARLY_ACCESS_ENABLED } from "@/components/EarlyAccess";
 import { ThemeToggle, themeScript } from "@/components/ThemeToggle";
 import { REPO_URL, SITE_URL } from "@/lib/site";
@@ -116,9 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/privacy/" className="block hover:text-fg">
                 Privacy
               </Link>
-              <a href="mailto:info@openlifemodel.com" className="block hover:text-fg">
-                info@openlifemodel.com
-              </a>
+              <ContactEmail className="block hover:text-fg" />
             </div>
           </div>
         </footer>

@@ -1,0 +1,18 @@
+name: Feature request
+description: Suggest an improvement to the calculator, editor or engine.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: For bigger ideas, and anything that changes the OLM format, please start a Discussion in Ideas first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or need, rather than a specific solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your suggestion

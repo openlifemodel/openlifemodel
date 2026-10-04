@@ -23,7 +23,7 @@ as any change to it. No secrets, IP addresses or account IDs here.
   path and query) through a Cloudflare Single Redirect rule; the apex is the
   canonical host.
 - DMARC: `p=reject`, because no mail is sent as this domain yet. Relax it when outbound email (SES) is added.
-- Email: Cloudflare Email Routing forwards `info@openlifemodel.com` to the
+- Email: Cloudflare Email Routing forwards the public info@ address to the
   owner's mailbox. No outbound email is sent by the project yet.
 
 ## Hosting

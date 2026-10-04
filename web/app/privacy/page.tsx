@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContactEmail } from "@/components/ContactEmail";
 import { REPO_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -41,7 +42,7 @@ export default function Privacy() {
         your IP address or anything you entered in the calculator. The list is kept in a Cloudflare database in
         Western Europe and used only to email you when accounts open. Every email will include a way to unsubscribe,
         and you can ask us to delete your entry at any time by writing to{" "}
-        <a href="mailto:info@openlifemodel.com">info@openlifemodel.com</a>.
+        <ContactEmail />.
       </p>
 
       <h2>Visit statistics</h2>
@@ -78,7 +79,7 @@ export default function Privacy() {
 
       <h2>Contact</h2>
       <p>
-        Questions: <a href="mailto:info@openlifemodel.com">info@openlifemodel.com</a>
+        Questions: <ContactEmail />
       </p>
     </article>
   );
