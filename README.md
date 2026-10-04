@@ -1,13 +1,27 @@
 <p align="center">
-  <a href="https://openlifemodel.com"><img src="brand/openlifemodel-mark.svg" width="88" height="88" alt="OpenLifeModel logo"></a>
+  <a href="https://openlifemodel.com"><img src="brand/openlifemodel-mark.svg" width="80" height="80" alt="OpenLifeModel logo"></a>
 </p>
 
 <h1 align="center">OpenLifeModel</h1>
 
 <p align="center">
   <strong>The life expectancy calculator that shows its work.</strong><br>
-  Transparent, reproducible and customizable longevity models.<br>
-  <a href="https://openlifemodel.com">openlifemodel.com</a>
+  Open, evidence-based longevity models you can inspect, edit and share.
+</p>
+
+<p align="center">
+  <a href="https://openlifemodel.com"><strong>Try it at openlifemodel.com →</strong></a>
+  &nbsp;·&nbsp; <a href="spec/OLM-SPEC.md">Read the spec</a>
+  &nbsp;·&nbsp; <a href="models/">Browse the models</a>
+</p>
+
+<p align="center">
+  <a href="https://openlifemodel.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-dark.png">
+      <img src="docs/images/screenshot-light.png" width="860" alt="The OpenLifeModel calculator: a profile form beside an estimated age at death of 89.1, a survival curve compared with the average, chances of reaching 80, 90 and 100, and the years each factor adds or removes.">
+    </picture>
+  </a>
 </p>
 
 > ⚠️ **Experimental, pre-release.** Model outputs are educational statistical
