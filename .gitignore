@@ -12,3 +12,5 @@ web/out/
 web/.next/
 web/next-env.d.ts
 *.tsbuildinfo
+
+.wrangler/

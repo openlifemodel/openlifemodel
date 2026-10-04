@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - "web/**"
+      - "functions/**"
       - "engine/**"
       - "models/**"
       - "spec/**"
@@ -43,14 +44,19 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - run: pnpm --filter @openlifemodel/web build
+      - name: Build site
+        run: pnpm --filter @openlifemodel/web build
+        env:
+          # The early-access form only exists on openlifemodel.com.
+          NEXT_PUBLIC_EARLY_ACCESS: "1"
       - name: Publish to Cloudflare Pages
         # Run Wrangler directly: wrangler-action tries to add it to the pnpm
-        # workspace root, which pnpm refuses.
+        # workspace root, which pnpm refuses. Run from the repo root so the
+        # Pages Functions in ./functions are deployed too.
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler@4.147.0 pages deploy web/out
+          pnpm dlx --allow-build=esbuild --allow-build=workerd wrangler@4.147.0 pages deploy web/out
           --project-name=openlifemodel --branch=main --commit-hash=${{ github.sha }}
           --commit-dirty=true

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { OlmModel, PersonProfile } from "@openlifemodel/engine";
 import type { LibraryTable } from "@/lib/life-tables";
 import { syncLevels, type EditorTab, type Problem } from "@/lib/draft-model";
@@ -44,6 +44,7 @@ export function ModelEditorPanel({
   currentProfile: PersonProfile | null;
 }) {
   const [tab, setTab] = useState<EditorTab>("factors");
+  const confirmDiscard = useRef<HTMLDialogElement>(null);
 
   // Every edit works on a copy; categorical levels follow their question's choices.
   const edit = (change: (m: OlmModel) => void) => {
@@ -69,7 +70,7 @@ export function ModelEditorPanel({
           </p>
         </div>
         {canReset && (
-          <button type="button" className="btn" onClick={onReset}>
+          <button type="button" className="btn" onClick={() => confirmDiscard.current?.showModal()}>
             Discard my edits
           </button>
         )}
@@ -92,6 +93,44 @@ export function ModelEditorPanel({
           </ul>
         </div>
       )}
+
+      <dialog
+        ref={confirmDiscard}
+        aria-labelledby="discard-title"
+        className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-6 text-fg shadow-xl backdrop:bg-black/40"
+      >
+        <h3 id="discard-title" className="text-lg font-semibold">
+          Discard all edits to {model.name || "this model"}?
+        </h3>
+        <p className="mt-2 text-sm text-muted">
+          This removes your edited copy and returns to the original model. It can&apos;t be undone.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            className="btn mr-auto"
+            // Saving work only needs a valid model; out-of-date tests are kept in the file as they are.
+            disabled={problems.length > 0}
+            title={problems.length > 0 ? "Fix the problems listed in the editor to download" : undefined}
+            onClick={onDownload}
+          >
+            Download a copy first
+          </button>
+          <button type="button" className="btn" autoFocus onClick={() => confirmDiscard.current?.close()}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn !border-bad !bg-bad !text-surface hover:!opacity-90"
+            onClick={() => {
+              confirmDiscard.current?.close();
+              onReset();
+            }}
+          >
+            Discard edits
+          </button>
+        </div>
+      </dialog>
 
       <div role="tablist" aria-label="Model editor sections" className="mt-5 flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map((t) => (

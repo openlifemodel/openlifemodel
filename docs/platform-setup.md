@@ -44,6 +44,17 @@ as any change to it. No secrets, IP addresses or account IDs here.
   unprivileged nginx on port 8080. CI builds and smoke-tests the image.
 - The reference calculator runs entirely in the browser; no server receives
   user health data.
+- Early-access list: `functions/api/early-access.ts` is a Cloudflare Pages
+  Function (deployed with the site from the repo root) that stores sign-ups in
+  the D1 database `openlifemodel-early-access` (primary location Western
+  Europe), bound to the Pages project as `EARLY_ACCESS_DB` in the project
+  settings (production and preview). Table `early_access`: email (unique),
+  interests (JSON list), source (?ref= or referring host), consent_version,
+  created_at; no IP addresses. The form only appears in builds with
+  `NEXT_PUBLIC_EARLY_ACCESS=1`, which the deploy workflow sets, so self-hosted
+  copies do not show it. Count sign-ups with:
+  `wrangler d1 execute openlifemodel-early-access --remote --command "SELECT source, COUNT(*) FROM early_access GROUP BY source"`
+  (token needs D1 access).
 - Analytics: Cloudflare Web Analytics (RUM) on `openlifemodel.com`, with the
   beacon injected automatically at Cloudflare's edge (not in the code), for
   all regions. It sets no cookies and records page, referrer, country and
