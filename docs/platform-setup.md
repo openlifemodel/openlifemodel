@@ -50,7 +50,10 @@ as any change to it. No secrets, IP addresses or account IDs here.
   Europe), bound to the Pages project as `EARLY_ACCESS_DB` in the project
   settings (production and preview). Table `early_access`: email (unique),
   interests (JSON list), source (?ref= or referring host), consent_version,
-  created_at; no IP addresses. The form only appears in builds with
+  created_at, update_token; no IP addresses. Sign-up is two steps: the email
+  first (which returns a one-time `update_token`), then the optional
+  interests from the thank-you screen via `/api/early-access/interests`,
+  which only updates the row whose token matches. The form only appears in builds with
   `NEXT_PUBLIC_EARLY_ACCESS=1`, which the deploy workflow sets, so self-hosted
   copies do not show it. Count sign-ups with:
   `wrangler d1 execute openlifemodel-early-access --remote --command "SELECT source, COUNT(*) FROM early_access GROUP BY source"`
