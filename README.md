@@ -19,7 +19,7 @@
   <a href="https://openlifemodel.com">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-dark.png">
-      <img src="docs/images/screenshot-light.png" width="860" alt="The OpenLifeModel calculator: a profile form beside an estimated age at death of 89.1, a survival curve compared with the average, chances of reaching 80, 90 and 100, and the years each factor adds or removes.">
+      <img src="docs/images/screenshot-light.png" width="860" alt="The OpenLifeModel calculator: a profile form and model picker beside an estimated age at death of 89.1 and an equivalent age of 38, a survival curve compared with the average, chances of reaching 80, 90 and 100, and how each factor compares with its best level.">
     </picture>
   </a>
 </p>
@@ -109,10 +109,8 @@ stage and will change.
 
 ## Contributing
 
-Issues and discussion are welcome now. Code contributions will be easier once
-the engine and spec skeleton land. By submitting a contribution you agree it is
-licensed under the licence of the part of the repository it changes.
-
-## Contact
-
-info@openlifemodel.com · [openlifemodel.com](https://openlifemodel.com)
+Questions and methodology debates are welcome in
+[Discussions](https://github.com/OpenLifeModel/openlifemodel/discussions).
+To challenge a number in a model, open a **Model evidence** issue. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for contributing models and code, and
+[SECURITY.md](SECURITY.md) to report a vulnerability privately.

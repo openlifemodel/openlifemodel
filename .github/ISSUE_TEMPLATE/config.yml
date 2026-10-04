@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or discuss the method
+    url: https://github.com/OpenLifeModel/openlifemodel/discussions
+    about: Questions, ideas and methodology debates belong in Discussions.
+  - name: Report a security problem
+    url: https://github.com/OpenLifeModel/openlifemodel/security/advisories/new
+    about: Please report vulnerabilities privately, not as public issues.

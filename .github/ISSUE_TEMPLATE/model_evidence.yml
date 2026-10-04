@@ -1,0 +1,30 @@
+name: Model evidence
+description: Challenge or improve a number, source or assumption in a model.
+labels: [model-evidence]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The model ID or name, e.g. us-lifestyle.
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What should change?
+      description: Which hazard ratio, band, population share, life table or assumption, and why.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Citations with DOIs or links, and which table or figure the numbers come from.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected effect (optional)
+      description: Roughly how much would results change, and for whom?
