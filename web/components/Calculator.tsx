@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   calculate,
   OlmValidationError,
@@ -351,8 +351,10 @@ export function Calculator({ models }: { models: OlmModel[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        {/* Left column stretches to the row height so the Model card can sit
+            level with the bottom of the results on wide screens. */}
+        <div className="flex flex-col gap-6">
         {/* Profile */}
         <section className="card p-5 sm:p-6" aria-labelledby="profile-heading">
           <div className="mb-5 flex items-baseline justify-between">
@@ -510,6 +512,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
         </section>
 
           {model && entry && (
+            <div className="lg:mt-auto">
             <ModelCard
               entries={entries.map((e) => ({ key: e.key, name: e.model.name || "Untitled model", origin: e.origin }))}
               selected={entry.key}
@@ -521,11 +524,12 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               onImport={() => fileInput.current?.click()}
               onToggleEditor={toggleEditor}
             />
+            </div>
           )}
         </div>
 
         {/* Results */}
-        <section ref={resultsRef} className="card p-5 sm:p-6 lg:sticky lg:top-20" aria-labelledby="results-heading">
+        <section ref={resultsRef} className="card self-start p-5 sm:p-6 lg:sticky lg:top-20" aria-labelledby="results-heading">
           <h2 id="results-heading" className="sr-only">
             Your results
           </h2>
@@ -685,7 +689,7 @@ function Results({
             )}
           </div>
         </div>
-        <EquivalentAge age={result.age} equivalent={result.equivalent_age} />
+        <EquivalentAge age={result.age} equivalent={result.equivalent_age} sexWord={sexWord} />
       </div>
       <p className="-mt-2 text-sm text-muted">
         {equivalentSentence(result, sexWord)} A statistical average, not a prediction for you.
@@ -694,7 +698,7 @@ function Results({
       <dl className="grid grid-cols-3 divide-x divide-line rounded-xl border border-line bg-surface-2">
         <Stat label="Years remaining" value={fmt(result.remaining_life_expectancy)} />
         <Stat label="Half reach" value={fmt(result.median_age_at_death, 0)} />
-        <Stat label="Chance of 90" value={pct(result.survival_to[90])} />
+        <Stat label="Yearly risk vs average" value={riskVsAverage(result.combined_hazard_ratio)} />
       </dl>
 
       <div>
@@ -856,22 +860,16 @@ function equivalentSentence(result: CalculationResult, sexWord: string): string 
   return `You have the remaining life expectancy of an average ${who}.`;
 }
 
-function EquivalentAge({ age, equivalent }: { age: number; equivalent: number }) {
+function EquivalentAge({ age, equivalent, sexWord }: { age: number; equivalent: number; sexWord: string }) {
   const shown = displayEquivalent(age, equivalent);
   const younger = Math.round(equivalent) < age;
   const older = Math.round(equivalent) > age;
+  const who = sexWord === "person" ? "an average person" : `an average ${sexWord}`;
   return (
-    <div className="rounded-xl border border-line bg-surface-2 px-4 py-3 sm:min-w-40">
+    <div className="relative rounded-xl border border-line bg-surface-2 px-4 py-3 sm:min-w-40">
       <div className="flex items-center gap-1.5 text-sm font-medium text-muted">
         Equivalent age
-        <a
-          href="/about/#equivalent-age"
-          className="grid h-4 w-4 place-items-center rounded-full border border-line-strong text-[10px] leading-none text-faint hover:text-fg"
-          aria-label="What is equivalent age?"
-          title="What is equivalent age?"
-        >
-          ?
-        </a>
+        <InfoTip text={`The age at which ${who} has the same remaining life expectancy as you.`} />
       </div>
       <div className="mt-0.5 flex items-baseline gap-2">
         <span
@@ -882,6 +880,44 @@ function EquivalentAge({ age, equivalent }: { age: number; equivalent: number })
         <span className="text-sm text-muted">you&apos;re {age}</span>
       </div>
     </div>
+  );
+}
+
+/** The combined hazard ratio in words: "57% lower", "2.1× higher". */
+function riskVsAverage(hr: number): string {
+  if (Math.abs(hr - 1) < 0.005) return "Average";
+  if (hr < 1) return `${Math.round((1 - hr) * 100)}% lower`;
+  return hr >= 2 ? `${hr.toFixed(1)}× higher` : `${Math.round((hr - 1) * 100)}% higher`;
+}
+
+/** A "?" that explains a term on hover, keyboard focus or tap. */
+function InfoTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <span className="inline-flex" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        aria-label="What does this mean?"
+        aria-describedby={open ? id : undefined}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        className="grid h-4 w-4 place-items-center rounded-full border border-line-strong text-[10px] leading-none text-faint hover:text-fg"
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          id={id}
+          role="tooltip"
+          className="absolute right-3 top-9 z-20 w-64 rounded-lg border border-line bg-surface p-3 text-xs font-normal leading-relaxed text-fg shadow-lg"
+        >
+          {text}
+        </span>
+      )}
+    </span>
   );
 }
 
