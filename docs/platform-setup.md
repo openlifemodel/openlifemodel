@@ -32,8 +32,8 @@ as any change to it. No secrets, IP addresses or account IDs here.
   Pages with the custom domain `openlifemodel.com`. The `*.pages.dev`
   hostname is served with `X-Robots-Tag: noindex` (`web/public/_headers`) and
   every page declares its `openlifemodel.com` URL as canonical.
-- Deploys: `.github/workflows/deploy.yml` runs on every push to `main` (and
-  manually), re-runs the tests, builds the site and publishes it with Wrangler
+- Deploys: `.github/workflows/deploy.yml` runs on pushes to `main` that touch
+  the site, engine, models, spec or build configuration (and manually), re-runs the tests, builds the site and publishes it with Wrangler
   to the Pages project `openlifemodel`. It uses the GitHub `production`
   environment (protected branches only) and two repository secrets:
   `CLOUDFLARE_API_TOKEN` (token `openlifemodel-github-deploy`, Account →
