@@ -94,6 +94,23 @@ describe("calculate", () => {
     expect(mean).toBeGreaterThan(1);
   });
 
+  it("reports each factor's best and worst possible contribution", () => {
+    const never = calculate(lifestyle, { age: 50, sex: "male", smoking_status: "never" });
+    const smoking = never.factors.find((f) => f.id === "smoking")!;
+    expect(smoking.best_life_years).toBeCloseTo(smoking.life_years, 10);
+    expect(smoking.best_levels).toEqual(["never"]);
+    expect(smoking.worst_life_years).toBeLessThan(0);
+
+    const current = calculate(lifestyle, { age: 50, sex: "male", smoking_status: "current" });
+    const s2 = current.factors.find((f) => f.id === "smoking")!;
+    expect(s2.worst_life_years).toBeCloseTo(s2.life_years, 10);
+    expect(s2.best_life_years).toBeCloseTo(smoking.best_life_years, 1);
+
+    const bmi = calculate(lifestyle, { age: 50, sex: "male", bmi: 27 }).factors.find((f) => f.id === "bmi")!;
+    expect(bmi.best_levels).toEqual([{ min: 18.5, max: 25 }]);
+    expect(bmi.best_life_years).toBeGreaterThan(bmi.life_years);
+  });
+
   it("uses [min, max) band boundaries", () => {
     const at25 = calculate(lifestyle, { age: 40, sex: "male", bmi: 25 });
     const below = calculate(lifestyle, { age: 40, sex: "male", bmi: 24.99 });

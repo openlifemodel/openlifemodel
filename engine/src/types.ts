@@ -6,7 +6,14 @@ export type Sex = "male" | "female";
 export interface PersonProfile {
   age: number;
   sex: Sex;
-  smoking_status?: "never" | "former" | "current";
+  smoking_status?:
+    | "never"
+    | "former_quit_before_35"
+    | "former_quit_35_44"
+    | "former_quit_45_54"
+    | "former_quit_55_plus"
+    | "former"
+    | "current";
   bmi?: number;
   systolic_bp?: number;
   mvpa_minutes_per_week?: number;
@@ -113,7 +120,15 @@ export interface FactorResult {
   hazard_ratio: number;
   /** Remaining life expectancy with this factor minus without it (factor set to 1). */
   life_years: number;
+  /** The most favourable life_years any level of this factor could give, other answers unchanged. */
+  best_life_years: number;
+  /** The least favourable life_years any level of this factor could give, other answers unchanged. */
+  worst_life_years: number;
+  /** The level(s) giving best_life_years: a categorical value, or a band's bounds. */
+  best_levels: FactorLevel[];
 }
+
+export type FactorLevel = string | { min?: number; max?: number };
 
 export interface SurvivalPoint {
   age: number;

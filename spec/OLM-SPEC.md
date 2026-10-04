@@ -181,6 +181,9 @@ Given a model and a profile with age `a` and sex `s`:
 8. **Factor contribution** in life-years is `e` minus the remaining life
    expectancy recomputed with that factor's HR set to 1. Contributions are
    not additive: they need not sum to the total difference from the baseline.
+   Implementations MAY also report each factor's best and worst possible
+   contribution: the same quantity computed for every level of the factor,
+   with the other factors unchanged.
 
 With no adjustment (`H = 1`), this reproduces a standard life table's life
 expectancy. The bundled US SSA 2023 model matches SSA's published values to

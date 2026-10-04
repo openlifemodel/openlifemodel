@@ -1,6 +1,7 @@
 import type {
   CalculationResult,
   Factor,
+  FactorLevel,
   FactorResult,
   OlmModel,
   PersonProfile,
@@ -78,6 +79,16 @@ function rawHazardRatio(factor: Factor, value: string | number): number {
   return band.hazard_ratio;
 }
 
+/** Every level of a factor with its raw hazard ratio. */
+function levelsOf(factor: Factor): { level: FactorLevel; hr: number }[] {
+  return factor.type === "categorical"
+    ? factor.levels.map((l) => ({ level: l.value, hr: l.hazard_ratio }))
+    : factor.bands.map((b) => ({
+        level: { ...(b.min !== undefined && { min: b.min }), ...(b.max !== undefined && { max: b.max }) },
+        hr: b.hazard_ratio,
+      }));
+}
+
 function populationMean(factor: Factor): number {
   const entries = factor.type === "categorical" ? factor.levels : factor.bands;
   return entries.reduce((sum, e) => sum + (e.prevalence ?? 0) * e.hazard_ratio, 0);
@@ -119,14 +130,26 @@ export function calculate(model: OlmModel, input: unknown): CalculationResult {
   const tailForce = (mu[mu.length - 1] as number) * combined;
 
   const factors: FactorResult[] = factorHrs.map(({ factor, value, hr }) => {
-    const without = project(mu, startAge, profile.age, combined / hr);
+    const others = combined / hr;
+    const without = project(mu, startAge, profile.age, others).remaining;
+    // What each level of this factor would give, holding the other answers fixed.
+    const scale = adjustment?.normalization === "population-average" ? populationMean(factor) : 1;
+    const options = levelsOf(factor).map(({ level, hr: raw }) => ({
+      level,
+      hr: raw / scale,
+      years: project(mu, startAge, profile.age, others * (raw / scale)).remaining - without,
+    }));
+    const lowestHr = Math.min(...options.map((o) => o.hr));
     return {
       id: factor.id,
       label: factor.label,
       input: factor.input,
       value,
       hazard_ratio: hr,
-      life_years: full.remaining - without.remaining,
+      life_years: full.remaining - without,
+      best_life_years: Math.max(...options.map((o) => o.years)),
+      worst_life_years: Math.min(...options.map((o) => o.years)),
+      best_levels: options.filter((o) => o.hr <= lowestHr * (1 + 1e-12)).map((o) => o.level),
     };
   });
 
