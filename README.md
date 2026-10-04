@@ -2,9 +2,9 @@
 
 **Transparent, reproducible and customizable longevity models.**
 
-> ⚠️ **Experimental, pre-release.** Nothing here is usable yet. Model outputs are
-> educational statistical estimates, not medical advice or a prediction of any
-> individual's lifespan.
+> ⚠️ **Experimental, pre-release.** The spec draft and engine work; the web
+> calculator is not built yet. Model outputs are educational statistical
+> estimates, not medical advice or a prediction of any individual's lifespan.
 
 Most life-expectancy calculators are black boxes: you enter some numbers and get
 a single figure back. OpenLifeModel takes the opposite approach:
@@ -27,14 +27,34 @@ a single figure back. OpenLifeModel takes the opposite approach:
 4. Switch between models, edit their assumptions, and import/export `.olm`
    files.
 
-## Repository layout (planned)
+## Status
+
+- [x] [OLM 0.1 specification draft](spec/OLM-SPEC.md) and JSON Schemas
+- [x] Reference engine in TypeScript ([`engine/`](engine/)), tested against the
+      US Social Security Administration's published life expectancies
+- [x] Example models: [US SSA 2023 baseline](models/us-ssa-2023-period.olm) and an
+      [illustrative lifestyle model](models/illustrative-lifestyle.olm)
+- [ ] Evidence-based lifestyle model with cited sources
+- [ ] Browser calculator and model editor
+- [ ] Self-hosting Docker image
+
+## Running the tests
+
+Requires Node 24 and pnpm.
+
+```bash
+pnpm install
+pnpm test
+```
+
+## Repository layout
 
 | Path | Contents | Licence |
 | --- | --- | --- |
 | `spec/` | The OLM specification and JSON Schema | CC-BY-4.0 |
 | `engine/` | TypeScript calculation engine, no UI dependencies | Apache-2.0 |
-| `models/` | Example `.olm` models with reference test cases | Per file (examples: CC-BY-4.0) |
-| `web/` | Reference browser calculator | Apache-2.0 |
+| `models/` | Example `.olm` models with reference test cases | Per file (`license` field) |
+| `web/` | Reference browser calculator (coming) | Apache-2.0 |
 
 ## The `.olm` format
 

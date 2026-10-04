@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlifemodel.com/schema/person-profile-0.1.json",
+  "title": "OpenLifeModel PersonProfile 0.1",
+  "description": "Canonical personal inputs that OLM 0.1 models may reference. Every field except age and sex is optional; models decide how to treat missing values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["age", "sex"],
+  "properties": {
+    "age": {
+      "description": "Age in completed years.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 119
+    },
+    "sex": {
+      "description": "Sex as recorded in the baseline mortality data.",
+      "enum": ["male", "female"]
+    },
+    "smoking_status": {
+      "description": "Cigarette smoking history.",
+      "enum": ["never", "former", "current"]
+    },
+    "bmi": {
+      "description": "Body mass index in kg/m².",
+      "type": "number",
+      "minimum": 10,
+      "maximum": 80
+    },
+    "systolic_bp": {
+      "description": "Resting systolic blood pressure in mmHg.",
+      "type": "number",
+      "minimum": 60,
+      "maximum": 260
+    },
+    "mvpa_minutes_per_week": {
+      "description": "Moderate-to-vigorous physical activity in minutes per week (vigorous minutes counted once, not doubled).",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5000
+    },
+    "alcohol_drinks_per_week": {
+      "description": "Standard alcoholic drinks per week (one drink ≈ 14 g of ethanol).",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 200
+    }
+  }
+}

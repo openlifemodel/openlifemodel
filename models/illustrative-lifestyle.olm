@@ -1,0 +1,141 @@
+# OLM 0.1 model file. Specification: spec/OLM-SPEC.md
+olm: "0.1"
+id: illustrative-lifestyle
+name: Illustrative lifestyle model (not evidence-based)
+version: 0.1.0
+status: illustrative
+license: CC-BY-4.0
+authors:
+  - name: OpenLifeModel contributors
+    url: https://github.com/OpenLifeModel/openlifemodel
+description: >-
+  A demonstration of how an OLM model adjusts a baseline life table for
+  personal factors. The hazard ratios and prevalences below are round numbers
+  chosen to be roughly plausible; they are NOT taken from a specific study and
+  must not be used to draw conclusions about anyone's health.
+population: US adults, for demonstration only.
+assumptions:
+  - Baseline mortality is the SSA 2023 period life table (see us-ssa-2023-period).
+  - >-
+    Factors act independently and multiply. Real factors are correlated (for
+    example BMI and blood pressure), so this double-counts shared effects.
+  - Hazard ratios are constant at all ages and for the rest of life.
+  - >-
+    Hazard ratios are normalized so that a person with population-average
+    exposure reproduces the baseline life table.
+sources:
+  - id: ssa-2023
+    citation: >-
+      Social Security Administration, Office of the Chief Actuary. Actuarial
+      Life Table: Period Life Table, 2023, as used in the 2026 Trustees Report.
+    url: https://www.ssa.gov/oact/STATS/table4c6.html
+    license: Public domain (US federal government work)
+    notes: Death probabilities transcribed from the published table on 4 October 2026.
+  - id: illustrative
+    citation: Round illustrative values chosen by the OpenLifeModel contributors; not from a study.
+baseline:
+  type: period-life-table
+  source: ssa-2023
+  start_age: 0
+  qx:
+    male: [
+      0.006015, 0.000479, 0.000320, 0.000249, 0.000194, 0.000159, 0.000137, 0.000125, 0.000120, 0.000120,
+      0.000125, 0.000140, 0.000173, 0.000233, 0.000327, 0.000463, 0.000634, 0.000819, 0.000999, 0.001138,
+      0.001235, 0.001315, 0.001378, 0.001439, 0.001509, 0.001595, 0.001685, 0.001783, 0.001876, 0.001970,
+      0.002085, 0.002202, 0.002308, 0.002407, 0.002490, 0.002577, 0.002665, 0.002764, 0.002864, 0.002987,
+      0.003115, 0.003253, 0.003419, 0.003600, 0.003777, 0.003931, 0.004073, 0.004245, 0.004477, 0.004795,
+      0.005126, 0.005496, 0.005917, 0.006404, 0.006923, 0.007491, 0.008173, 0.008938, 0.009714, 0.010494,
+      0.011337, 0.012232, 0.013196, 0.014229, 0.015316, 0.016455, 0.017574, 0.018735, 0.019981, 0.021366,
+      0.022903, 0.024615, 0.026504, 0.028648, 0.031071, 0.033802, 0.037010, 0.041158, 0.045461, 0.050346,
+      0.055633, 0.061757, 0.068358, 0.075420, 0.083364, 0.092680, 0.103459, 0.115502, 0.129018, 0.143810,
+      0.159458, 0.176551, 0.195360, 0.216286, 0.238799, 0.262268, 0.286291, 0.310944, 0.332325, 0.349036,
+      0.366568, 0.384960, 0.404252, 0.424488, 0.445712, 0.467998, 0.491398, 0.515968, 0.541766, 0.568854,
+      0.597297, 0.627162, 0.658520, 0.691446, 0.726018, 0.762319, 0.800435, 0.840457, 0.882480, 0.926604
+    ]
+    female: [
+      0.005125, 0.000392, 0.000229, 0.000188, 0.000155, 0.000133, 0.000115, 0.000105, 0.000100, 0.000098,
+      0.000101, 0.000111, 0.000126, 0.000152, 0.000188, 0.000229, 0.000273, 0.000323, 0.000372, 0.000410,
+      0.000441, 0.000476, 0.000513, 0.000546, 0.000582, 0.000609, 0.000641, 0.000683, 0.000740, 0.000808,
+      0.000878, 0.000947, 0.001018, 0.001089, 0.001154, 0.001209, 0.001263, 0.001347, 0.001438, 0.001533,
+      0.001643, 0.001742, 0.001845, 0.001954, 0.002075, 0.002187, 0.002306, 0.002438, 0.002595, 0.002791,
+      0.003030, 0.003288, 0.003554, 0.003847, 0.004172, 0.004532, 0.004923, 0.005365, 0.005815, 0.006333,
+      0.006923, 0.007555, 0.008220, 0.008881, 0.009514, 0.010188, 0.010880, 0.011659, 0.012543, 0.013581,
+      0.014769, 0.016153, 0.017705, 0.019495, 0.021533, 0.023846, 0.026458, 0.029700, 0.033135, 0.036982,
+      0.041183, 0.045959, 0.051282, 0.057262, 0.064107, 0.071752, 0.080490, 0.090566, 0.102204, 0.115178,
+      0.129176, 0.144229, 0.160353, 0.177635, 0.196502, 0.216846, 0.238750, 0.261359, 0.283899, 0.306491,
+      0.329680, 0.353333, 0.377300, 0.401416, 0.425501, 0.451031, 0.478092, 0.506778, 0.537185, 0.568854,
+      0.597297, 0.627162, 0.658520, 0.691446, 0.726018, 0.762319, 0.800435, 0.840457, 0.882480, 0.926604
+    ]
+adjustment:
+  method: proportional-hazards
+  normalization: population-average
+  factors:
+    - id: smoking
+      label: Smoking
+      input: smoking_status
+      type: categorical
+      missing: neutral
+      source: illustrative
+      levels:
+        - {value: never, hazard_ratio: 1.0, prevalence: 0.55}
+        - {value: former, hazard_ratio: 1.3, prevalence: 0.30}
+        - {value: current, hazard_ratio: 2.5, prevalence: 0.15}
+    - id: bmi
+      label: Body mass index
+      input: bmi
+      type: banded
+      missing: neutral
+      source: illustrative
+      bands:
+        - {max: 18.5, hazard_ratio: 1.5, prevalence: 0.02}
+        - {min: 18.5, max: 25, hazard_ratio: 1.0, prevalence: 0.30}
+        - {min: 25, max: 30, hazard_ratio: 1.1, prevalence: 0.33}
+        - {min: 30, max: 35, hazard_ratio: 1.3, prevalence: 0.20}
+        - {min: 35, hazard_ratio: 1.7, prevalence: 0.15}
+    - id: activity
+      label: Physical activity
+      input: mvpa_minutes_per_week
+      type: banded
+      missing: neutral
+      source: illustrative
+      bands:
+        - {max: 10, hazard_ratio: 1.35, prevalence: 0.25}
+        - {min: 10, max: 150, hazard_ratio: 1.15, prevalence: 0.30}
+        - {min: 150, max: 300, hazard_ratio: 1.0, prevalence: 0.25}
+        - {min: 300, hazard_ratio: 0.95, prevalence: 0.20}
+    - id: blood-pressure
+      label: Systolic blood pressure
+      input: systolic_bp
+      type: banded
+      missing: neutral
+      source: illustrative
+      bands:
+        - {max: 120, hazard_ratio: 1.0, prevalence: 0.45}
+        - {min: 120, max: 140, hazard_ratio: 1.1, prevalence: 0.30}
+        - {min: 140, max: 160, hazard_ratio: 1.3, prevalence: 0.17}
+        - {min: 160, hazard_ratio: 1.6, prevalence: 0.08}
+tests:
+  # Regression values produced by the reference engine (OLM 0.1 method).
+  - name: Nothing provided reproduces the baseline
+    profile: {age: 40, sex: male}
+    expect:
+      remaining_life_expectancy: {value: 38.5795, tolerance: 0.001}
+      combined_hazard_ratio: {value: 1, tolerance: 0.000001}
+  - name: Favourable profile, male aged 40
+    profile: {age: 40, sex: male, smoking_status: never, bmi: 23, mvpa_minutes_per_week: 200, systolic_bp: 115}
+    expect:
+      remaining_life_expectancy: {value: 45.9059, tolerance: 0.001}
+      median_age_at_death: {value: 88.6192, tolerance: 0.001}
+      survival_to_90: {value: 0.4509, tolerance: 0.0001}
+      combined_hazard_ratio: {value: 0.4967, tolerance: 0.0001}
+  - name: Unfavourable profile, male aged 40
+    profile: {age: 40, sex: male, smoking_status: current, bmi: 36, mvpa_minutes_per_week: 0, systolic_bp: 165}
+    expect:
+      remaining_life_expectancy: {value: 22.6478, tolerance: 0.001}
+      survival_to_80: {value: 0.0583, tolerance: 0.0001}
+      combined_hazard_ratio: {value: 4.5601, tolerance: 0.0001}
+  - name: Partial profile, female aged 65
+    profile: {age: 65, sex: female, smoking_status: former, bmi: 27}
+    expect:
+      remaining_life_expectancy: {value: 21.4511, tolerance: 0.001}
+      survival_to_100: {value: 0.0446, tolerance: 0.0001}
