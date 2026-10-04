@@ -16,6 +16,8 @@ function pick(result: CalculationResult, output: ExpectedOutput): number | null 
       return result.remaining_life_expectancy;
     case "median_age_at_death":
       return result.median_age_at_death;
+    case "equivalent_age":
+      return result.equivalent_age;
     case "survival_to_80":
       return result.survival_to[80];
     case "survival_to_90":

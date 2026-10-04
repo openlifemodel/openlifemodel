@@ -68,6 +68,27 @@ describe("calculate", () => {
     expect(after[0]!.survival).toBeLessThanOrEqual(0.5);
   });
 
+  it("gives an average person an equivalent age equal to their age", () => {
+    for (const age of [0, 25, 40, 77, 119]) {
+      expect(calculate(baseline, { age, sex: "female" }).equivalent_age).toBeCloseTo(age, 6);
+    }
+  });
+
+  it("lowers equivalent age for favourable profiles and raises it for unfavourable ones", () => {
+    const never = calculate(lifestyle, { age: 50, sex: "male", smoking_status: "never", bmi: 22 });
+    const current = calculate(lifestyle, { age: 50, sex: "male", smoking_status: "current", bmi: 36 });
+    expect(never.equivalent_age).toBeLessThan(50);
+    expect(current.equivalent_age).toBeGreaterThan(50);
+    // Same remaining life expectancy as an average person at the equivalent age.
+    const avgAtEquivalent = calculate(baseline, { age: Math.floor(current.equivalent_age), sex: "male" });
+    expect(avgAtEquivalent.remaining_life_expectancy).toBeGreaterThanOrEqual(current.remaining_life_expectancy);
+  });
+
+  it("clamps equivalent age to the table", () => {
+    const young = calculate(lifestyle, { age: 0, sex: "female", smoking_status: "never", bmi: 22, systolic_bp: 110, mvpa_minutes_per_week: 300 });
+    expect(young.equivalent_age).toBe(0);
+  });
+
   it("reports survival milestones already passed as null", () => {
     const result = calculate(baseline, { age: 85, sex: "female" });
     expect(result.survival_to[80]).toBeNull();

@@ -225,6 +225,9 @@
               "median_age_at_death": {
                 "$ref": "#/$defs/expectation"
               },
+              "equivalent_age": {
+                "$ref": "#/$defs/expectation"
+              },
               "survival_to_80": {
                 "$ref": "#/$defs/expectation"
               },

@@ -96,6 +96,7 @@ export interface Expectation {
 export type ExpectedOutput =
   | "remaining_life_expectancy"
   | "median_age_at_death"
+  | "equivalent_age"
   | "survival_to_80"
   | "survival_to_90"
   | "survival_to_100"
@@ -165,6 +166,8 @@ export interface CalculationResult {
   remaining_life_expectancy: number;
   expected_age_at_death: number;
   median_age_at_death: number;
+  /** Age at which an average person of the same sex has the same remaining life expectancy. */
+  equivalent_age: number;
   /** Probability of surviving from the current age to the given age; null if already past it. */
   survival_to: Record<80 | 90 | 100, number | null>;
   combined_hazard_ratio: number;
