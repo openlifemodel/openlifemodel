@@ -16,13 +16,18 @@ import {
   type PersonProfile,
 } from "@openlifemodel/engine";
 import { LEVEL_LABELS } from "@/lib/labels";
-import { ModelEditor } from "./ModelEditor";
+import { editedCopy, findProblems } from "@/lib/draft-model";
+import { ModelEditorPanel } from "./editor/ModelEditorPanel";
+import { ModelCard } from "./ModelCard";
+import { SummaryBar } from "./SummaryBar";
 import { SurvivalChart } from "./SurvivalChart";
 
 type Origin = "bundled" | "imported" | "edited";
 
 interface Entry {
   key: string;
+  /** The last version that passed validation; results are calculated from it. */
+  valid: OlmModel;
   /** Key of the entry this one was derived from; keeps the editor stable while typing. */
   root: string;
   origin: Origin;
@@ -51,6 +56,8 @@ const EMPTY_DRAFT: Draft = {
 
 const STORAGE_KEY = "olm.profile.v1";
 const CUSTOM_STORAGE_KEY = "olm.custom.v1";
+const MODELS_STORAGE_KEY = "olm.models.v1";
+const EDITOR_STORAGE_KEY = "olm.editor.v1";
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 const NUMERIC_INPUTS: Record<
@@ -190,14 +197,15 @@ const pct = (p: number | null) => (p === null ? "n/a" : p < 0.001 ? "<0.1%" : `$
 
 export function Calculator({ models }: { models: OlmModel[] }) {
   const [entries, setEntries] = useState<Entry[]>(() =>
-    models.map((m) => ({ key: m.id, root: m.id, origin: "bundled", model: m })),
+    models.map((m) => ({ key: m.id, root: m.id, origin: "bundled", model: m, valid: m })),
   );
   const [selected, setSelected] = useState(models[0]?.id ?? "");
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [customDraft, setCustomDraft] = useState<CustomDraft>({});
   const [importErrors, setImportErrors] = useState<string[]>([]);
-  const [editorReset, setEditorReset] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
 
   // Remember the profile in this browser only. Saving waits until the saved
   // profile has been restored, so the defaults never overwrite it.
@@ -208,6 +216,22 @@ export function Calculator({ models }: { models: OlmModel[] }) {
       const restoredDraft = saved ? { ...EMPTY_DRAFT, ...(JSON.parse(saved) as Partial<Draft>) } : EMPTY_DRAFT;
       const savedCustom = localStorage.getItem(CUSTOM_STORAGE_KEY);
       if (savedCustom) setCustomDraft(JSON.parse(savedCustom) as CustomDraft);
+      // Edited and imported models, kept in this browser so work is never lost.
+      const savedModels = localStorage.getItem(MODELS_STORAGE_KEY);
+      if (savedModels) {
+        const { entries: kept, selected: keptSelected } = JSON.parse(savedModels) as { entries: Entry[]; selected: string };
+        const usable = kept.filter((e) => {
+          try {
+            validateModel(structuredClone(e.valid));
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        setEntries((list) => [...list.filter((e) => e.origin === "bundled"), ...usable]);
+        if ([...models.map((m) => m.id), ...usable.map((e) => e.key)].includes(keptSelected)) setSelected(keptSelected);
+      }
+      setEditorOpen(window.location.hash === "#edit" || localStorage.getItem(EDITOR_STORAGE_KEY) === "open");
       setDraft({ ...restoredDraft, units: restoredDraft.units || defaultUnits() });
     } catch {
       // Storage unavailable: start from the defaults.
@@ -220,26 +244,25 @@ export function Calculator({ models }: { models: OlmModel[] }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
       localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(customDraft));
+      localStorage.setItem(
+        MODELS_STORAGE_KEY,
+        JSON.stringify({ entries: entries.filter((e) => e.origin !== "bundled"), selected }),
+      );
+      localStorage.setItem(EDITOR_STORAGE_KEY, editorOpen ? "open" : "closed");
     } catch {
-      // Ignore: remembering the profile is a convenience.
+      // Ignore: remembering things is a convenience.
     }
-  }, [draft, customDraft, restored]);
+  }, [draft, customDraft, entries, selected, editorOpen, restored]);
 
   const entry = entries.find((e) => e.key === selected) ?? entries[0];
-  const model = entry?.model;
+  // Calculations use the last valid version; the editor shows the draft.
+  const model = entry?.valid;
+  const draftModel = entry?.model;
+  const problems = useMemo(() => (draftModel ? findProblems(draftModel) : []), [draftModel]);
+  const rootModel = entries.find((e) => e.key === entry?.root && e.origin === "bundled")?.valid;
   const usedInputs = new Set(model?.adjustment?.factors.map((f) => f.input) ?? []);
   const profile = toProfile(draft, customDraft, model?.inputs ?? []);
   const bodyBmi = bmiFromBody(draft);
-
-  const modelErrors = useMemo(() => {
-    if (!model || entry?.origin !== "edited") return [];
-    try {
-      validateModel(model);
-      return [];
-    } catch (err) {
-      return errorText(err);
-    }
-  }, [model, entry?.origin]);
 
   const outcome = useMemo((): Outcome | { errors: string[] } => {
     if (!model) return { errors: ["No model selected."] };
@@ -271,29 +294,34 @@ export function Calculator({ models }: { models: OlmModel[] }) {
 
   const onEdit = (next: OlmModel) => {
     if (!entry) return;
-    const base = entry.origin === "edited" ? entries.find((e) => e.key === entry.root)?.model : entry.model;
-    const edited: OlmModel = {
-      ...next,
-      id: `${base?.id ?? next.id}-custom`,
-      name: `${base?.name ?? next.name} (edited)`,
-      version: `${base?.version ?? next.version}-custom`,
-      status: next.status === "published" ? "experimental" : next.status,
-    };
-    // Reference tests describe the original numbers, so they no longer apply.
-    delete edited.tests;
-    const key = `${entry.root}:edited`;
-    setEntries((list) => [
-      ...list.filter((e) => e.key !== key),
-      { key, root: entry.root, origin: "edited", model: edited },
-    ]);
-    setSelected(key);
+    const isValid = findProblems(next).length === 0;
+    if (entry.origin === "bundled") {
+      // The first edit of a bundled model creates a clearly named copy.
+      const copy = editedCopy(entry.model);
+      const draft = { ...next, id: copy.id, name: copy.name, version: copy.version, status: copy.status };
+      delete draft.tests;
+      const key = `${entry.root}:edited`;
+      setEntries((list) => [
+        ...list.filter((e) => e.key !== key),
+        { key, root: entry.root, origin: "edited", model: draft, valid: isValid ? draft : entry.valid },
+      ]);
+      setSelected(key);
+      return;
+    }
+    setEntries((list) =>
+      list.map((e) => (e.key === entry.key ? { ...e, model: next, valid: isValid ? next : e.valid } : e)),
+    );
   };
 
   const resetEdits = () => {
-    if (!entry) return;
-    setEntries((list) => list.filter((e) => e.key !== `${entry.root}:edited`));
+    if (!entry || entry.origin !== "edited") return;
+    setEntries((list) => list.filter((e) => e.key !== entry.key));
     setSelected(entry.root);
-    setEditorReset((n) => n + 1);
+  };
+
+  const toggleEditor = (open: boolean) => {
+    setEditorOpen(open);
+    if (open) requestAnimationFrame(() => document.getElementById("model-editor")?.scrollIntoView({ behavior: "smooth" }));
   };
 
   const onImport = async (file: File) => {
@@ -308,7 +336,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
       const key = `imported:${imported.id}`;
       setEntries((list) => [
         ...list.filter((e) => e.key !== key),
-        { key, root: key, origin: "imported", model: imported },
+        { key, root: key, origin: "imported", model: imported, valid: imported },
       ]);
       setSelected(key);
     } catch (err) {
@@ -324,6 +352,7 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   return (
     <div className="space-y-6">
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        <div className="space-y-6">
         {/* Profile */}
         <section className="card p-5 sm:p-6" aria-labelledby="profile-heading">
           <div className="mb-5 flex items-baseline justify-between">
@@ -480,8 +509,23 @@ export function Calculator({ models }: { models: OlmModel[] }) {
           </div>
         </section>
 
+          {model && entry && (
+            <ModelCard
+              entries={entries.map((e) => ({ key: e.key, name: e.model.name || "Untitled model", origin: e.origin }))}
+              selected={entry.key}
+              model={entry.model}
+              linkToPage={entry.origin === "bundled" ? `/models/${entry.model.id}/` : null}
+              importErrors={importErrors}
+              editorOpen={editorOpen}
+              onSelect={setSelected}
+              onImport={() => fileInput.current?.click()}
+              onToggleEditor={toggleEditor}
+            />
+          )}
+        </div>
+
         {/* Results */}
-        <section className="card p-5 sm:p-6 lg:sticky lg:top-20" aria-labelledby="results-heading">
+        <section ref={resultsRef} className="card p-5 sm:p-6 lg:sticky lg:top-20" aria-labelledby="results-heading">
           <h2 id="results-heading" className="sr-only">
             Your results
           </h2>
@@ -509,105 +553,57 @@ export function Calculator({ models }: { models: OlmModel[] }) {
         </section>
       </div>
 
-      {/* Model */}
-      <section className="card p-5 sm:p-6" aria-labelledby="model-heading">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="min-w-0 flex-1 basis-64">
-            <span id="model-heading" className="label">
-              Model
-            </span>
-            <select className="field" value={entry?.key} onChange={(e) => setSelected(e.target.value)}>
-              {entries.map((e) => (
-                <option key={e.key} value={e.key}>
-                  {e.model.name}
-                  {e.origin === "imported" ? " (imported)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex gap-2">
-            <button type="button" className="btn" onClick={() => fileInput.current?.click()}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 15V3M7 8l5-5 5 5M5 21h14" />
-              </svg>
-              Import
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={!model || modelErrors.length > 0}
-              onClick={() => model && download(`${model.id}.olm.yaml`, serializeModel(model))}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
-              </svg>
-              Export
-            </button>
-          </div>
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".yaml,.yml,.olm"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void onImport(file);
-              e.target.value = "";
-            }}
-          />
-        </div>
-        {model && (
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className={`pill ${model.status === "illustrative" ? "!border-bad !text-bad" : ""}`}>
-              {model.status === "published" ? "Published data" : model.status === "experimental" ? "Experimental" : "Illustrative only"}
-            </span>
-            <span className="pill">v{model.version}</span>
-            <span className="pill">{model.sources.length} source{model.sources.length === 1 ? "" : "s"}</span>
-            {entry?.origin === "bundled" && (
-              <a href={`/models/${model.id}/`} className="font-medium text-accent-strong underline underline-offset-4">
-                Sources and assumptions
-              </a>
-            )}
-          </div>
-        )}
-        {model && <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">{model.description}</p>}
-        {importErrors.length > 0 && (
-          <ul role="alert" className="mt-3 list-disc rounded-lg bg-bad-soft py-3 pl-8 pr-4 text-sm text-bad">
-            {importErrors.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        )}
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".yaml,.yml,.olm"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void onImport(file);
+          e.target.value = "";
+        }}
+      />
 
-        {model && (
-          <details className="group mt-5 border-t border-line pt-4" open={entry?.origin === "edited"}>
-            <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
-              <svg className="transition group-open:rotate-90" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m9 6 6 6-6 6" />
-              </svg>
-              Edit this model&apos;s assumptions
-              <span className="text-xs font-normal text-faint">Change a number and the results update</span>
-            </summary>
-            <div className="mt-4">
-              {modelErrors.length > 0 && (
-                <ul role="alert" className="mb-4 list-disc rounded-lg bg-bad-soft py-3 pl-8 pr-4 text-sm text-bad">
-                  {modelErrors.map((e) => (
-                    <li key={e}>{e}</li>
-                  ))}
-                </ul>
-              )}
-              <ModelEditor key={`${entry?.root}:${editorReset}`} model={model} onEdit={onEdit} />
-              {entry?.origin === "edited" && (
-                <button type="button" className="btn mt-4" onClick={resetEdits}>
-                  Undo all edits
-                </button>
-              )}
-            </div>
-          </details>
-        )}
-      </section>
+      {editorOpen && draftModel && (
+        <ModelEditorPanel
+          // Keyed by the original model, so the first edit (which creates the
+          // edited copy) doesn't reset the editor's tab.
+          key={entry?.root}
+          model={draftModel}
+          problems={problems}
+          onChange={onEdit}
+          onDownload={() => download(`${draftModel.id}.olm.yaml`, serializeModel(draftModel))}
+          onImport={() => fileInput.current?.click()}
+          onReset={resetEdits}
+          canReset={entry?.origin === "edited"}
+        />
+      )}
+
+      {editorOpen && !("errors" in outcome) && (
+        <SummaryBar
+          watch={resultsRef}
+          ageAtDeath={outcome.result.expected_age_at_death}
+          age={outcome.result.age}
+          equivalentAge={outcome.result.equivalent_age}
+          original={
+            rootModel && entry?.origin === "edited" && !("errors" in outcome)
+              ? safeAgeAtDeath(rootModel, profile)
+              : null
+          }
+          stale={problems.length > 0}
+        />
+      )}
     </div>
   );
+}
+
+function safeAgeAtDeath(model: OlmModel, profile: PersonProfile): number | null {
+  try {
+    return calculate(model, profile).expected_age_at_death;
+  } catch {
+    return null;
+  }
 }
 
 /** A question declared by the model itself (OLM custom input). */
