@@ -8,7 +8,7 @@ OpenLifeModel name or logo (see section 6 of the Apache License 2.0).
 You may:
 
 - Say that your software implements or is compatible with the OLM
-  specification or reads `.olm` files.
+  specification or reads OLM model files.
 - Refer to OpenLifeModel factually, for example "based on OpenLifeModel".
 
 Please do not:

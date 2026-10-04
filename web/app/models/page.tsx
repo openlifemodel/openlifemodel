@@ -4,7 +4,7 @@ import { bundledModels } from "@/lib/models";
 
 export const metadata: Metadata = {
   title: "Models",
-  description: "Open life expectancy models in the .olm format, with their sources, assumptions and reference tests.",
+  description: "Open life expectancy models in the open OLM format, with their sources, assumptions and reference tests.",
   alternates: { canonical: "/models/" },
 };
 
@@ -13,7 +13,7 @@ export default function ModelsPage() {
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold">Models</h1>
       <p className="mt-2 muted">
-        Each model is a single <code>.olm</code> file: a baseline life table, the personal factors that adjust it,
+        Each model is a single OLM file (<code>.olm.yaml</code>): a baseline life table, the personal factors that adjust it,
         where every number came from, and test cases that any implementation must reproduce.
       </p>
       <ul className="mt-6 space-y-4">

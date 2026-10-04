@@ -10,14 +10,14 @@ import {
 } from "../src/index.ts";
 
 const modelsDir = new URL("../../models/", import.meta.url);
-const modelFiles = readdirSync(modelsDir).filter((f) => f.endsWith(".olm"));
+const modelFiles = readdirSync(modelsDir).filter((f) => f.endsWith(".olm.yaml"));
 const fixturesDir = new URL("./fixtures/", import.meta.url);
 const load = (file: string, dir: URL = modelsDir): OlmModel => parseModel(readFileSync(new URL(file, dir), "utf8"));
 
 describe("bundled models", () => {
   it("finds the example models", () => {
-    expect(modelFiles).toContain("us-ssa-2023-period.olm");
-    expect(modelFiles).toContain("us-lifestyle.olm");
+    expect(modelFiles).toContain("us-ssa-2023-period.olm.yaml");
+    expect(modelFiles).toContain("us-lifestyle.olm.yaml");
   });
 
   describe.each(modelFiles)("%s", (file) => {
@@ -40,14 +40,14 @@ describe("bundled models", () => {
 
 describe("illustrative fixture", () => {
   it("passes its own reference tests", () => {
-    const failures = runReferenceTests(load("illustrative-lifestyle.olm", fixturesDir)).filter((c) => !c.passed);
+    const failures = runReferenceTests(load("illustrative-lifestyle.olm.yaml", fixturesDir)).filter((c) => !c.passed);
     expect(failures).toEqual([]);
   });
 });
 
 describe("calculate", () => {
-  const baseline = load("us-ssa-2023-period.olm");
-  const lifestyle = load("illustrative-lifestyle.olm", fixturesDir);
+  const baseline = load("us-ssa-2023-period.olm.yaml");
+  const lifestyle = load("illustrative-lifestyle.olm.yaml", fixturesDir);
 
   it("returns a survival curve starting at 1 and decreasing", () => {
     const result = calculate(baseline, { age: 30, sex: "female" });
@@ -113,7 +113,7 @@ describe("calculate", () => {
 });
 
 describe("validation", () => {
-  const text = readFileSync(new URL("illustrative-lifestyle.olm", fixturesDir), "utf8");
+  const text = readFileSync(new URL("illustrative-lifestyle.olm.yaml", fixturesDir), "utf8");
   const base = (): OlmModel => structuredClone(parseModel(text));
   const errorsFor = (model: unknown): string[] => {
     try {
@@ -123,6 +123,15 @@ describe("validation", () => {
       return (err as OlmValidationError).errors;
     }
   };
+
+  it("rejects binary files such as Outlook archives", () => {
+    expect(() => parseModel("PK\u0003\u0004\u0000\u0000binary")).toThrow(/not an OLM model file/);
+  });
+
+  it("rejects YAML that is not an OLM model", () => {
+    expect(() => parseModel("name: my shopping list\nitems: [eggs]")).toThrow(/not an OLM model file/);
+    expect(() => parseModel("just a sentence")).toThrow(/not an OLM model file/);
+  });
 
   it("rejects text that is not YAML", () => {
     expect(() => parseModel("olm: [unclosed")).toThrow(/not valid YAML/);

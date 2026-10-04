@@ -1,7 +1,7 @@
 {
   "name": "@openlifemodel/engine",
   "version": "0.1.0",
-  "description": "Reference calculation engine for OpenLifeModel (.olm) survival models.",
+  "description": "Reference calculation engine for OpenLifeModel (OLM) survival models.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

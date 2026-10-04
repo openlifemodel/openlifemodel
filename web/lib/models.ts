@@ -20,7 +20,7 @@ let cache: BundledModel[] | undefined;
 
 export function bundledModels(): BundledModel[] {
   cache ??= readdirSync(MODELS_DIR)
-    .filter((f) => f.endsWith(".olm"))
+    .filter((f) => f.endsWith(".olm.yaml"))
     .map((file) => {
       const text = readFileSync(path.join(MODELS_DIR, file), "utf8");
       return { file, text, model: parseModel(text) };

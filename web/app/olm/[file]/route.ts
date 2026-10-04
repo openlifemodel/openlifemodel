@@ -1,6 +1,6 @@
 import { bundledModels } from "@/lib/models";
 
-// Serves the raw .olm files as static downloads.
+// Serves the raw model files as static downloads.
 export const dynamic = "force-static";
 export const dynamicParams = false;
 

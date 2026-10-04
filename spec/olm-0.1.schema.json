@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openlifemodel.com/schema/olm-0.1.json",
   "title": "OpenLifeModel model file (OLM 0.1)",
-  "description": "Structural schema for .olm files. Semantic rules that JSON Schema cannot express (equal table lengths, prevalences summing to 1, non-overlapping bands) are listed in OLM-SPEC.md and must also be checked by implementations.",
+  "description": "Structural schema for OLM model files (.olm.yaml). Semantic rules that JSON Schema cannot express (equal table lengths, prevalences summing to 1, non-overlapping bands) are listed in OLM-SPEC.md and must also be checked by implementations.",
   "type": "object",
   "additionalProperties": false,
   "required": [
