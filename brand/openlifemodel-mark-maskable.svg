@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OpenLifeModel">
+  <defs>
+    <linearGradient id="olm-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#olm-bg)"/>
+  <g transform="translate(9.6 9.6) scale(0.7)">
+  <!-- A survival curve: flat through most of life, then falling. The dot marks the median age. -->
+  <path d="M12 18 C 26 18, 31 20, 36 31 S 44 46, 52 46 L 52 50 L 12 50 Z" fill="#ffffff" fill-opacity="0.24"/>
+  <path d="M12 18 C 26 18, 31 20, 36 31 S 44 46, 52 46" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="36" cy="31" r="5" fill="#ffffff"/>
+  </g>
+</svg>

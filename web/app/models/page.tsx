@@ -11,23 +11,24 @@ export const metadata: Metadata = {
 export default function ModelsPage() {
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold">Models</h1>
-      <p className="mt-2 muted">
+      <p className="pill mb-4">Open models</p>
+      <h1 className="text-3xl font-semibold tracking-tight">Models</h1>
+      <p className="mt-3 leading-relaxed text-muted">
         Each model is a single OLM file (<code>.olm.yaml</code>): a baseline life table, the personal factors that adjust it,
         where every number came from, and test cases that any implementation must reproduce.
       </p>
       <ul className="mt-6 space-y-4">
         {bundledModels().map(({ model }) => (
-          <li key={model.id} className="card p-5">
-            <h2 className="font-semibold">
+          <li key={model.id} className="card p-5 transition hover:border-accent">
+            <h2 className="text-lg font-semibold">
               <Link href={`/models/${model.id}/`} className="hover:underline">
                 {model.name}
               </Link>
             </h2>
-            <p className="mt-1 text-xs muted">
+            <p className="mt-1 text-xs text-muted">
               v{model.version} · {model.status} · {model.license}
             </p>
-            <p className="mt-2 text-sm">{model.description}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{model.description}</p>
           </li>
         ))}
       </ul>

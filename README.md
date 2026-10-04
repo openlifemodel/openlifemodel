@@ -1,6 +1,14 @@
-# OpenLifeModel
+<p align="center">
+  <a href="https://openlifemodel.com"><img src="brand/openlifemodel-mark.svg" width="88" height="88" alt="OpenLifeModel logo"></a>
+</p>
 
-**Transparent, reproducible and customizable longevity models.**
+<h1 align="center">OpenLifeModel</h1>
+
+<p align="center">
+  <strong>The life expectancy calculator that shows its work.</strong><br>
+  Transparent, reproducible and customizable longevity models.<br>
+  <a href="https://openlifemodel.com">openlifemodel.com</a>
+</p>
 
 > ⚠️ **Experimental, pre-release.** Model outputs are educational statistical
 > estimates, not medical advice or a prediction of any individual's lifespan.
@@ -79,8 +87,8 @@ stage and will change.
 - Code (engine, reference app, tooling): [Apache License 2.0](LICENSE).
 - Specification and documentation: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/).
 - Model files: the licence declared inside each file.
-- The OpenLifeModel name and logo are not covered by these licences; see
-  [TRADEMARKS.md](TRADEMARKS.md).
+- The OpenLifeModel name and logo are trademarks and are not licensed by
+  these licences; see [TRADEMARKS.md](TRADEMARKS.md) and [brand/](brand/).
 
 ## Contributing
 
