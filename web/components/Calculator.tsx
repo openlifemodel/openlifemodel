@@ -85,6 +85,7 @@ function friendly(errors: string[]): string[] {
   return errors.map((e) => {
     const field = /^\/(\w+)/.exec(e)?.[1];
     if (field === "age") return "Enter your age as a whole number between 0 and 119.";
+    if (e.startsWith("sex is required")) return "Choose Male or Female: this model has separate life tables for men and women.";
     if (field && field in NUMERIC_INPUTS) {
       const { min, max } = NUMERIC_INPUTS[field as keyof typeof NUMERIC_INPUTS];
       return `${FIELD_NAMES[field]} should be between ${min} and ${max}.`;
@@ -148,7 +149,8 @@ function defaultUnits(): Units {
 type CustomDraft = Record<string, string>;
 
 function toProfile(draft: Draft, customDraft: CustomDraft, inputs: CustomInput[]): PersonProfile {
-  const profile: PersonProfile = { age: Number(draft.age), sex: draft.sex as PersonProfile["sex"] };
+  const profile: PersonProfile = { age: Number(draft.age) };
+  if (draft.sex === "male" || draft.sex === "female") profile.sex = draft.sex;
   if (draft.smoking_status) profile.smoking_status = draft.smoking_status as NonNullable<PersonProfile["smoking_status"]>;
   for (const key of Object.keys(NUMERIC_INPUTS) as (keyof typeof NUMERIC_INPUTS)[]) {
     if (draft[key].trim() !== "") profile[key] = Number(draft[key]);
@@ -249,7 +251,8 @@ export function Calculator({ models }: { models: OlmModel[] }) {
         const quitting = calculate(model, { ...profile, smoking_status: quitBandFor(profile.age) });
         quitNow = quitting.factors.find((f) => f.input === "smoking_status")?.life_years ?? null;
       }
-      return { result, population: calculate(model, { age: profile.age, sex: profile.sex }), quitNow };
+      const average: PersonProfile = { age: profile.age, ...(profile.sex && { sex: profile.sex }) };
+      return { result, population: calculate(model, average), quitNow };
     } catch (err) {
       return { errors: errorText(err) };
     }
@@ -314,7 +317,9 @@ export function Calculator({ models }: { models: OlmModel[] }) {
   };
 
   const numericFields = (Object.keys(NUMERIC_INPUTS) as (keyof typeof NUMERIC_INPUTS)[]).filter((k) => usedInputs.has(k));
-  const sexWord = profile.sex === "female" ? "woman" : "man";
+  const sexWord = profile.sex === "female" ? "woman" : profile.sex === "male" ? "man" : "person";
+  // A model with a combined ("all") life table works without the person's sex.
+  const sexOptional = Boolean(model?.baseline.qx.all);
 
   return (
     <div className="space-y-6">
@@ -328,21 +333,26 @@ export function Calculator({ models }: { models: OlmModel[] }) {
             <span className="text-xs text-faint">Leave blank if unsure</span>
           </div>
           <div className="space-y-5">
-            <div className="grid grid-cols-[6.5rem_1fr] gap-3">
-              <label className="block">
+            <div className={`grid gap-3 ${sexOptional ? "grid-cols-1" : "grid-cols-[6.5rem_1fr]"}`}>
+              <label className={`block ${sexOptional ? "max-w-[6.5rem]" : ""}`}>
                 <span className="label">Age</span>
                 <input type="number" inputMode="numeric" min="0" max="119" step="1" className="field" value={draft.age} onChange={set("age")} />
               </label>
               <fieldset>
                 <legend className="label">Sex</legend>
-                <div className="segmented">
-                  {(["male", "female"] as const).map((sex) => (
-                    <label key={sex}>
-                      <input type="radio" name="sex" value={sex} checked={draft.sex === sex} onChange={set("sex")} />
-                      <span>{sex === "male" ? "Male" : "Female"}</span>
-                    </label>
-                  ))}
+                <div className={`segmented ${sexOptional ? "[grid-auto-columns:auto] whitespace-nowrap" : ""}`}>
+                  {([["male", "Male"], ["female", "Female"], ...(sexOptional ? [["", "Prefer not to say"]] : [])] as const).map(
+                    ([value, text]) => (
+                      <label key={value || "none"}>
+                        <input type="radio" name="sex" value={value} checked={draft.sex === value} onChange={set("sex")} />
+                        <span>{text}</span>
+                      </label>
+                    ),
+                  )}
                 </div>
+                {!sexOptional && draft.sex === "" && (
+                  <p className="hint text-bad">This model has separate life tables for men and women, so it needs this.</p>
+                )}
               </fieldset>
             </div>
 
@@ -452,22 +462,14 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               );
             })}
 
-            {(model?.inputs ?? []).length > 0 && (
-              <fieldset className="border-t border-line pt-5">
-                <legend className="sr-only">Questions from this model</legend>
-                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">Asked by this model</p>
-                <div className="space-y-5">
-                {(model?.inputs ?? []).map((input) => (
-                  <CustomField
-                    key={input.id}
-                    input={input}
-                    value={customDraft[input.id] ?? ""}
-                    onChange={(v) => setCustomDraft((d) => ({ ...d, [input.id]: v }))}
-                  />
-                ))}
-                </div>
-              </fieldset>
-            )}
+            {(model?.inputs ?? []).map((input) => (
+              <CustomField
+                key={input.id}
+                input={input}
+                value={customDraft[input.id] ?? ""}
+                onChange={(v) => setCustomDraft((d) => ({ ...d, [input.id]: v }))}
+              />
+            ))}
 
             <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs leading-relaxed text-muted">
               <svg className="mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -853,7 +855,8 @@ function equivalentSentence(result: CalculationResult, sexWord: string): string 
     return `Your remaining life expectancy is average for your age.`;
   }
   // Non-breaking hyphens keep "19-year-old" on one line.
-  const who = shown === "<18" ? `${sexWord === "woman" ? "girl" : "boy"} under 18` : `${shown}\u2011year\u2011old ${sexWord}`;
+  const youth: Record<string, string> = { woman: "girl", man: "boy", person: "child" };
+  const who = shown === "<18" ? `${youth[sexWord] ?? "child"} under 18` : `${shown}\u2011year\u2011old ${sexWord}`;
   return `You have the remaining life expectancy of an average ${who}.`;
 }
 

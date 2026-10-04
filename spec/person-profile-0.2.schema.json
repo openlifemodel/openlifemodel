@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openlifemodel.com/schema/person-profile-0.2.json",
   "title": "OpenLifeModel PersonProfile 0.2",
-  "description": "Standard personal inputs that OLM models may reference, plus answers to model-declared custom inputs. Every field except age and sex is optional; models decide how to treat missing values.",
+  "description": "Standard personal inputs that OLM models may reference, plus answers to model-declared custom inputs. Only age is required; models decide how to treat other missing values.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "age",
-    "sex"
+    "age"
   ],
   "properties": {
     "age": {
@@ -17,7 +16,7 @@
       "maximum": 119
     },
     "sex": {
-      "description": "Sex as recorded in the baseline mortality data.",
+      "description": "Sex as recorded in the baseline mortality data. Optional: models with a combined (\"all\") life table work without it.",
       "enum": [
         "male",
         "female"
