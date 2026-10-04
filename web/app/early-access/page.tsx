@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function EarlyAccessPage() {
   return (
-    <div className="max-w-2xl py-4 sm:py-10">
+    <div className="mx-auto max-w-2xl py-8 sm:py-16">
       <EarlyAccessForm />
     </div>
   );
