@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/` },
     { url: `${SITE_URL}/about/` },
     { url: `${SITE_URL}/models/` },
+    { url: `${SITE_URL}/privacy/` },
     ...bundledModels().map(({ model }) => ({ url: `${SITE_URL}/models/${model.id}/` })),
   ];
 }

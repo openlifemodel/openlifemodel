@@ -11,7 +11,7 @@ const POINTS = [
   },
   {
     title: "Private by design",
-    body: "The calculation runs in your browser. Nothing you type is sent to a server, and there are no accounts.",
+    body: "The calculation runs in your browser. This site never sends what you type to a server, and there are no accounts or cookies.",
     icon: "M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z",
   },
   {
