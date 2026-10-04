@@ -1,0 +1,9 @@
+# Owner's private briefing (business strategy); never commit
+openlifemodel-project-context.md
+
+node_modules/
+dist/
+coverage/
+.DS_Store
+.env*
+!.env.example
