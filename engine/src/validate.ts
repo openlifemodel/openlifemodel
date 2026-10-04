@@ -138,18 +138,26 @@ export function validateProfile(data: unknown): PersonProfile {
   return data as PersonProfile;
 }
 
-/** Parse and validate the text of a .olm file (YAML). Throws OlmValidationError. */
+const NOT_A_MODEL =
+  "this is not an OLM model file. (Outlook for Mac also uses the .olm extension for mailbox archives.)";
+
+/** Parse and validate the text of an OLM model file (.olm.yaml). Throws OlmValidationError. */
 export function parseModel(text: string): OlmModel {
+  // Binary files (such as Outlook archives) contain NUL characters; YAML never does.
+  if (text.includes("\u0000")) throw new OlmValidationError("model", [NOT_A_MODEL]);
   let data: unknown;
   try {
     data = parse(text);
   } catch (err) {
     throw new OlmValidationError("model", [`not valid YAML: ${(err as Error).message}`]);
   }
+  if (typeof data !== "object" || data === null || !("olm" in data)) {
+    throw new OlmValidationError("model", [NOT_A_MODEL]);
+  }
   return validateModel(data);
 }
 
-/** Serialize a model back to .olm (YAML) text. */
+/** Serialize a model back to OLM model file (YAML) text. */
 export function serializeModel(model: OlmModel): string {
   return stringify(model, { lineWidth: 100, flowCollectionPadding: false });
 }

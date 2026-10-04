@@ -6,7 +6,7 @@ Status: accepted (4 October 2026)
 
 - Code: Apache-2.0.
 - Specification and documentation: CC-BY-4.0.
-- Model files: each `.olm` declares its own licence (SPDX identifier) in a
+- Model files: each OLM model file declares its own licence (SPDX identifier) in a
   `license` field. Project example models use CC-BY-4.0.
 - The OpenLifeModel name and logo are reserved (`TRADEMARKS.md`).
 - The commercial hosted product (accounts, history, integrations) lives in a
@@ -14,7 +14,7 @@ Status: accepted (4 October 2026)
 
 ## Rationale
 
-- A permissive licence maximises adoption of the engine and the `.olm` format
+- A permissive licence maximises adoption of the engine and the OLM format
   by researchers, companies and other implementations, which is the point of an
   open standard.
 - Apache-2.0 over MIT: it is equally permissive and familiar to contributors,

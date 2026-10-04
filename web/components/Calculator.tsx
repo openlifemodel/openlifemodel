@@ -40,6 +40,7 @@ const EMPTY_DRAFT: Draft = {
 };
 
 const STORAGE_KEY = "olm.profile.v1";
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 const NUMERIC_INPUTS: Record<Exclude<FactorInput, "smoking_status">, { label: string; hint: string; step: string }> = {
   bmi: { label: "Body mass index (kg/m²)", hint: "Or enter height and weight below.", step: "0.1" },
@@ -174,6 +175,11 @@ export function Calculator({ models }: { models: OlmModel[] }) {
 
   const onImport = async (file: File) => {
     setImportErrors([]);
+    // Model files are small text files; large files are almost certainly something else.
+    if (file.size > MAX_IMPORT_BYTES) {
+      setImportErrors([`${file.name}: this file is too large to be an OLM model (limit 2 MB).`]);
+      return;
+    }
     try {
       const imported = parseModel(await file.text());
       const key = `imported:${imported.id}`;
@@ -282,20 +288,20 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               </select>
             </label>
             <button type="button" className="btn" onClick={() => fileInput.current?.click()}>
-              Import .olm
+              Import model
             </button>
             <button
               type="button"
               className="btn"
               disabled={!model || modelErrors.length > 0}
-              onClick={() => model && download(`${model.id}.olm`, serializeModel(model))}
+              onClick={() => model && download(`${model.id}.olm.yaml`, serializeModel(model))}
             >
-              Export .olm
+              Export model
             </button>
             <input
               ref={fileInput}
               type="file"
-              accept=".olm,.yaml,.yml"
+              accept=".yaml,.yml,.olm"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];

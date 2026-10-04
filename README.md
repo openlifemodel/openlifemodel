@@ -8,7 +8,7 @@
 Most life-expectancy calculators are black boxes: you enter some numbers and get
 a single figure back. OpenLifeModel takes the opposite approach:
 
-- **Open models.** Every model is a plain, human-readable `.olm` file that
+- **Open models.** Every model is a plain, human-readable OLM file (`.olm.yaml`) that
   states its baseline mortality data, effect sizes, sources and assumptions.
 - **One shared engine.** A small, deterministic, well-tested engine turns a
   profile and a model into a survival curve and life expectancy.
@@ -23,7 +23,7 @@ a single figure back. OpenLifeModel takes the opposite approach:
 2. Calculate remaining life expectancy, median survival age and the
    probability of reaching 80, 90 and 100.
 3. Show the full survival curve and how much each factor contributes.
-4. Switch between models, edit their assumptions, and import/export `.olm`
+4. Switch between models, edit their assumptions, and import/export OLM
    files.
 
 ## Status
@@ -31,10 +31,10 @@ a single figure back. OpenLifeModel takes the opposite approach:
 - [x] [OLM 0.1 specification draft](spec/OLM-SPEC.md) and JSON Schemas
 - [x] Reference engine in TypeScript ([`engine/`](engine/)), tested against the
       US Social Security Administration's published life expectancies
-- [x] Models: the [US SSA 2023 baseline](models/us-ssa-2023-period.olm) and an
-      [evidence-based lifestyle model](models/us-lifestyle.olm) (smoking with quit
+- [x] Models: the [US SSA 2023 baseline](models/us-ssa-2023-period.olm.yaml) and an
+      [evidence-based lifestyle model](models/us-lifestyle.olm.yaml) (smoking with quit
       age, BMI and exercise, each from a large published study)
-- [x] Browser calculator with model editor and `.olm` import/export ([`web/`](web/))
+- [x] Browser calculator with model editor and OLM file import/export ([`web/`](web/))
 - [x] Self-hosting Docker image
 
 ## Run it yourself
@@ -62,15 +62,16 @@ pnpm --filter @openlifemodel/web dev       # http://localhost:3100
 | --- | --- | --- |
 | `spec/` | The OLM specification and JSON Schema | CC-BY-4.0 |
 | `engine/` | TypeScript calculation engine, no UI dependencies | Apache-2.0 |
-| `models/` | Example `.olm` models with reference test cases | Per file (`license` field) |
+| `models/` | Example OLM models with reference test cases | Per file (`license` field) |
 | `web/` | Reference browser calculator (Next.js, static export) | Apache-2.0 |
 
-## The `.olm` format
+## The OLM format
 
-`.olm` aims to be a portable, vendor-neutral format for publishing survival
+OLM aims to be a portable, vendor-neutral format for publishing survival
 models, so that a model described in a paper can be run and verified by any
 compatible implementation. Each model file carries its own `license` field, so
-authors choose the terms for their own models. The spec is at an early draft
+authors choose the terms for their own models. Model files use the extension
+`.olm.yaml` (plain `.olm` is also accepted). The spec is at an early draft
 stage and will change.
 
 ## Licensing

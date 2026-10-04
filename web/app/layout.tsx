@@ -6,11 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "OpenLifeModel: open, transparent life expectancy models",
+    default: "Open-source life expectancy calculator | OpenLifeModel",
     template: "%s · OpenLifeModel",
   },
   description:
-    "Estimate life expectancy with open, inspectable survival models. Change the assumptions, compare models and export them as .olm files. Runs entirely in your browser.",
+    "Estimate life expectancy with open, inspectable survival models. Change the assumptions, compare models and export them as open model files. Runs entirely in your browser.",
   alternates: { canonical: "/" },
   openGraph: { siteName: "OpenLifeModel", type: "website" },
 };

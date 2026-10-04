@@ -81,7 +81,7 @@ export default function About() {
 
       <h2>Open models, open format</h2>
       <p>
-        Each model is a <code>.olm</code> file: a human-readable YAML document listing its baseline,
+        Each model is an OLM file (<code>.olm.yaml</code>): a human-readable YAML document listing its baseline,
         factors, sources, assumptions and reference test cases. You can{" "}
         <Link href="/models/">browse the models</Link>, edit one in the calculator, export it, and
         share it. Researchers can publish a model alongside a paper so that anyone can run and

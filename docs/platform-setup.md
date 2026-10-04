@@ -7,8 +7,12 @@ as any change to it. No secrets, IP addresses or account IDs here.
 
 - Repository `OpenLifeModel/openlifemodel` (public), owned by the
   `OpenLifeModel` organization.
-- `main` is protected; changes arrive through PRs with passing CI. Head
-  branches are deleted automatically after merge.
+- `main` is protected by the `protect-main` ruleset: no direct pushes,
+  force-pushes or deletion; changes arrive through PRs that pass the `test`
+  and `docker` checks. Only the owner (or an agent acting for the owner) can
+  merge. Head branches are deleted automatically after merge.
+- Actions: workflows from outside contributors' PRs always need the owner's
+  approval to run.
 
 ## Domain and DNS
 
@@ -24,8 +28,15 @@ as any change to it. No secrets, IP addresses or account IDs here.
 - MVP: static site (`web/`, Next.js static export to `web/out`) on Cloudflare
   Pages with the custom domain `openlifemodel.com`. The `*.pages.dev`
   hostname is served with `X-Robots-Tag: noindex` (`web/public/_headers`) and
-  every page declares its `openlifemodel.com` URL as canonical. (Not yet
-  deployed.)
+  every page declares its `openlifemodel.com` URL as canonical.
+- Deploys: `.github/workflows/deploy.yml` runs on every push to `main` (and
+  manually), re-runs the tests, builds the site and publishes it with Wrangler
+  to the Pages project `openlifemodel`. It uses the GitHub `production`
+  environment (protected branches only) and two repository secrets:
+  `CLOUDFLARE_API_TOKEN` (token `openlifemodel-github-deploy`, Account →
+  Cloudflare Pages → Edit only, expires May 2027) and `CLOUDFLARE_ACCOUNT_ID`.
+- Pull requests from outside contributors need the owner's approval before
+  any workflow runs, and never receive secrets.
 - Self-hosting: the root `Dockerfile` builds the same site and serves it with
   unprivileged nginx on port 8080. CI builds and smoke-tests the image.
 - The reference calculator runs entirely in the browser; no server receives

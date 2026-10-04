@@ -4,7 +4,7 @@ Status: **draft**. Expect breaking changes before 1.0.
 Licence: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/).
 
 OLM (OpenLifeModel) is a file format for survival models that estimate
-all-cause mortality and life expectancy. An `.olm` file contains everything an
+all-cause mortality and life expectancy. An OLM model file contains everything an
 implementation needs to reproduce a model's results: its baseline mortality,
 how personal factors adjust that baseline, where the numbers came from, and
 test cases that any implementation must reproduce.
@@ -22,7 +22,10 @@ The key words MUST, SHOULD and MAY are used as in RFC 2119.
 
 ## 2. Files
 
-- An `.olm` file is a UTF-8 YAML 1.2 document whose top level is a mapping.
+- An OLM model file is a UTF-8 YAML 1.2 document whose top level is a mapping.
+- Files SHOULD use the extension `.olm.yaml`. Implementations SHOULD also
+  accept `.olm`, but must check the content: Outlook for Mac uses `.olm` for
+  unrelated mailbox archives.
 - It MUST validate against [`olm-0.1.schema.json`](olm-0.1.schema.json) and
   satisfy the additional rules in section 5.
 - Media type (provisional): `application/vnd.openlifemodel+yaml`.

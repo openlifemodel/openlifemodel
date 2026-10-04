@@ -1,4 +1,4 @@
-"""Derive US adult prevalence weights for models/us-lifestyle-2026.olm.
+"""Derive US adult prevalence weights for models/us-lifestyle.olm.yaml.
 
 Population-average normalization (spec/OLM-SPEC.md section 4.2) needs the share
 of the population in each level of each factor. This script computes them from
