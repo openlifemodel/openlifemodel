@@ -46,7 +46,7 @@ const NUMERIC_INPUTS: Record<Exclude<FactorInput, "smoking_status">, { label: st
   systolic_bp: { label: "Systolic blood pressure (mmHg)", hint: "The higher number, e.g. 120 in 120/80.", step: "1" },
   mvpa_minutes_per_week: {
     label: "Exercise (minutes per week)",
-    hint: "Moderate or vigorous activity: brisk walking, cycling, running, sport.",
+    hint: "Leisure-time activity that makes you breathe harder, e.g. brisk walking, cycling, sport. Count vigorous minutes (running, fast cycling) twice.",
     step: "10",
   },
   alcohol_drinks_per_week: { label: "Alcoholic drinks per week", hint: "One drink ≈ 14 g of alcohol.", step: "1" },
@@ -215,8 +215,14 @@ export function Calculator({ models }: { models: OlmModel[] }) {
               <select className="field" value={draft.smoking_status} onChange={set("smoking_status")}>
                 <option value="">Prefer not to say</option>
                 <option value="never">Never smoked</option>
-                <option value="former">Former smoker</option>
                 <option value="current">Current smoker</option>
+                <optgroup label="Former smoker, quit at age…">
+                  <option value="former_quit_before_35">under 35</option>
+                  <option value="former_quit_35_44">35 to 44</option>
+                  <option value="former_quit_45_54">45 to 54</option>
+                  <option value="former_quit_55_plus">55 or over</option>
+                  <option value="former">don&apos;t remember</option>
+                </optgroup>
               </select>
             </label>
           )}

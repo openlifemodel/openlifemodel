@@ -5,7 +5,10 @@
   "description": "Canonical personal inputs that OLM 0.1 models may reference. Every field except age and sex is optional; models decide how to treat missing values.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["age", "sex"],
+  "required": [
+    "age",
+    "sex"
+  ],
   "properties": {
     "age": {
       "description": "Age in completed years.",
@@ -15,11 +18,22 @@
     },
     "sex": {
       "description": "Sex as recorded in the baseline mortality data.",
-      "enum": ["male", "female"]
+      "enum": [
+        "male",
+        "female"
+      ]
     },
     "smoking_status": {
-      "description": "Cigarette smoking history.",
-      "enum": ["never", "former", "current"]
+      "description": "Cigarette smoking history. Former smokers should give the age they quit when known; use \"former\" only if it is not.",
+      "enum": [
+        "never",
+        "former_quit_before_35",
+        "former_quit_35_44",
+        "former_quit_45_54",
+        "former_quit_55_plus",
+        "former",
+        "current"
+      ]
     },
     "bmi": {
       "description": "Body mass index in kg/m².",
@@ -34,7 +48,7 @@
       "maximum": 260
     },
     "mvpa_minutes_per_week": {
-      "description": "Moderate-to-vigorous physical activity in minutes per week (vigorous minutes counted once, not doubled).",
+      "description": "Leisure-time moderate-to-vigorous physical activity, in moderate-equivalent minutes per week: each minute of vigorous activity counts as two.",
       "type": "number",
       "minimum": 0,
       "maximum": 5000

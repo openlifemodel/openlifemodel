@@ -8,7 +8,7 @@ import { parseModel, type OlmModel } from "@openlifemodel/engine";
 const MODELS_DIR = path.join(process.cwd(), "..", "models");
 
 // Order in which models appear in the calculator; the first is the default.
-const ORDER = ["illustrative-lifestyle", "us-ssa-2023-period"];
+const ORDER = ["us-lifestyle", "us-ssa-2023-period"];
 
 export interface BundledModel {
   file: string;

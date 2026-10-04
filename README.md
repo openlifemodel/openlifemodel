@@ -31,9 +31,9 @@ a single figure back. OpenLifeModel takes the opposite approach:
 - [x] [OLM 0.1 specification draft](spec/OLM-SPEC.md) and JSON Schemas
 - [x] Reference engine in TypeScript ([`engine/`](engine/)), tested against the
       US Social Security Administration's published life expectancies
-- [x] Example models: [US SSA 2023 baseline](models/us-ssa-2023-period.olm) and an
-      [illustrative lifestyle model](models/illustrative-lifestyle.olm)
-- [ ] Evidence-based lifestyle model with cited sources
+- [x] Models: the [US SSA 2023 baseline](models/us-ssa-2023-period.olm) and an
+      [evidence-based lifestyle model](models/us-lifestyle.olm) (smoking with quit
+      age, BMI and exercise, each from a large published study)
 - [x] Browser calculator with model editor and `.olm` import/export ([`web/`](web/))
 - [x] Self-hosting Docker image
 
