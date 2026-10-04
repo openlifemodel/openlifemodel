@@ -6,16 +6,17 @@
 interface D1Statement {
   bind(...values: unknown[]): { run(): Promise<unknown> };
 }
-interface Env {
+export interface Env {
   EARLY_ACCESS_DB: { prepare(sql: string): D1Statement };
 }
 
-// Keep in step with web/components/EarlyAccess.tsx.
-const INTERESTS = new Set(["history", "labs", "wearables", "assistant", "models"]);
+// Shared with functions/api/early-access/interests.ts; keep in step with
+// web/components/EarlyAccess.tsx.
+export const INTERESTS = new Set(["history", "labs", "wearables", "assistant", "models"]);
 const CONSENT_VERSION = "2026-10-04";
-const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
+export const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
-const reply = (status: number, body: Record<string, unknown>) =>
+export const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -30,8 +31,10 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
     return reply(400, { error: "Send JSON." });
   }
 
+  // A one-time code lets the same browser add its answers on the thank-you screen.
+  const token = crypto.randomUUID();
   // Bots fill in every field; people never see this one.
-  if (typeof data.website === "string" && data.website !== "") return reply(200, { ok: true });
+  if (typeof data.website === "string" && data.website !== "") return reply(200, { ok: true, token });
 
   const email = typeof data.email === "string" ? data.email.trim().toLowerCase() : "";
   if (email.length > 254 || !EMAIL.test(email)) return reply(400, { error: "Please enter a valid email address." });
@@ -42,13 +45,14 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
   const source =
     typeof data.source === "string" && /^[a-z0-9.-]{1,60}$/.test(data.source) ? data.source : null;
 
-  // Signing up twice is not an error, and the reply never reveals who is on the list.
+  // Signing up twice is not an error, and the reply never reveals who is on the
+  // list: an existing entry keeps its code, so the new one simply won't match.
   await env.EARLY_ACCESS_DB.prepare(
-    "INSERT INTO early_access (email, interests, source, consent_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(email) DO NOTHING",
+    "INSERT INTO early_access (email, interests, source, consent_version, update_token) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(email) DO NOTHING",
   )
-    .bind(email, JSON.stringify(interests), source, CONSENT_VERSION)
+    .bind(email, JSON.stringify(interests), source, CONSENT_VERSION, token)
     .run();
-  return reply(200, { ok: true });
+  return reply(200, { ok: true, token });
 }
 
 export function onRequest(): Response {
