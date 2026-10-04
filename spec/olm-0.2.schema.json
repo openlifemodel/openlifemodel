@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlifemodel.com/schema/olm-0.1.json",
-  "title": "OpenLifeModel model file (OLM 0.1)",
-  "description": "Structural schema for OLM model files (.olm.yaml). Semantic rules that JSON Schema cannot express (equal table lengths, prevalences summing to 1, non-overlapping bands) are listed in OLM-SPEC.md and must also be checked by implementations.",
+  "$id": "https://openlifemodel.com/schema/olm-0.2.json",
+  "title": "OpenLifeModel model file (OLM 0.2)",
+  "description": "Structural schema for OLM model files (.olm.yaml). Semantic rules that JSON Schema cannot express (equal table lengths, prevalences summing to 1, non-overlapping bands, factor inputs that exist) are listed in OLM-SPEC.md and must also be checked by implementations.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +19,11 @@
   ],
   "properties": {
     "olm": {
-      "const": "0.1"
+      "description": "Spec version. 0.1 files are valid 0.2 files without custom inputs.",
+      "enum": [
+        "0.1",
+        "0.2"
+      ]
     },
     "id": {
       "description": "Stable identifier: lowercase letters, digits and hyphens.",
@@ -120,6 +124,13 @@
             "type": "string"
           }
         }
+      }
+    },
+    "inputs": {
+      "description": "Custom inputs this model asks for, in addition to the standard PersonProfile fields.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/customInput"
       }
     },
     "baseline": {
@@ -293,14 +304,8 @@
           "maxLength": 40
         },
         "input": {
-          "description": "PersonProfile field this factor reads.",
-          "enum": [
-            "smoking_status",
-            "bmi",
-            "systolic_bp",
-            "mvpa_minutes_per_week",
-            "alcohol_drinks_per_week"
-          ]
+          "description": "A standard PersonProfile field, or the id of a custom input declared in `inputs`.",
+          "$ref": "#/$defs/inputId"
         },
         "type": {
           "enum": [
@@ -400,6 +405,138 @@
           "not": {
             "required": [
               "levels"
+            ]
+          }
+        }
+      ]
+    },
+    "inputId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+      "maxLength": 40
+    },
+    "customInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/inputId"
+        },
+        "label": {
+          "description": "Short name, e.g. \"Air pollution\".",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "question": {
+          "description": "The question shown to the user.",
+          "type": "string",
+          "maxLength": 80
+        },
+        "help": {
+          "description": "One or two sentences of guidance.",
+          "type": "string",
+          "maxLength": 240
+        },
+        "type": {
+          "enum": [
+            "number",
+            "choice"
+          ]
+        },
+        "unit": {
+          "description": "Unit for number inputs, e.g. \"µg/m³\".",
+          "type": "string",
+          "maxLength": 16
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "choices": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "label"
+            ],
+            "properties": {
+              "value": {
+                "$ref": "#/$defs/inputId"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "type": {
+              "const": "number"
+            }
+          },
+          "required": [
+            "unit",
+            "min",
+            "max"
+          ],
+          "not": {
+            "required": [
+              "choices"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "choice"
+            }
+          },
+          "required": [
+            "choices"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "unit"
+                ]
+              },
+              {
+                "required": [
+                  "min"
+                ]
+              },
+              {
+                "required": [
+                  "max"
+                ]
+              },
+              {
+                "required": [
+                  "step"
+                ]
+              }
             ]
           }
         }

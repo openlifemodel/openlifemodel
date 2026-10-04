@@ -1,9 +1,12 @@
-# OLM 0.2 model file. Specification: spec/OLM-SPEC.md
+# Example OLM 0.2 model with custom inputs (spec section 3.1).
+# It adds two model-declared questions, air pollution (number) and commute
+# (choice), to the US lifestyle model. The air pollution and commute numbers
+# are ILLUSTRATIVE ONLY; this file shows the format and is not shipped on the site.
 olm: "0.2"
-id: us-lifestyle
-name: "US adults: smoking, weight and exercise"
+id: custom-inputs-example
+name: "Example: custom inputs"
 version: 0.1.0
-status: experimental
+status: illustrative
 license: CC-BY-4.0
 authors:
   - name: OpenLifeModel contributors
@@ -76,6 +79,8 @@ sources:
       per week (1 MET-hour = 20 moderate-equivalent minutes), adjusted for age,
       sex, race, education, smoking, alcohol, marital status, cancer and heart
       disease history, and BMI.
+  - id: demo
+    citation: Illustrative values chosen to demonstrate custom inputs; not from a study.
   - id: nhanes-2017-2020
     citation: >-
       National Center for Health Statistics. National Health and Nutrition
@@ -84,6 +89,21 @@ sources:
     url: https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?Cycle=2017-2020
     license: Public domain (US federal government work)
     notes: Computed by models/derivations/nhanes_prevalence.py in this repository.
+inputs:
+  - id: pm25
+    label: Air pollution
+    question: Average PM2.5 where you live
+    help: Your city's annual average is on its air quality website.
+    type: number
+    unit: µg/m³
+    min: 0
+    max: 200
+  - id: commute
+    label: Commute
+    type: choice
+    choices:
+      - {value: car, label: Car or transit}
+      - {value: active, label: Walk or cycle}
 baseline:
   type: period-life-table
   source: ssa-2023
@@ -171,28 +191,22 @@ adjustment:
         - {min: 450, max: 800, hazard_ratio: 0.61, prevalence: 0.11}
         - {min: 800, max: 1500, hazard_ratio: 0.61, prevalence: 0.055}
         - {min: 1500, hazard_ratio: 0.68, prevalence: 0.019}
-tests:
-  # Values produced by the reference engine (OLM 0.1 method).
-  - name: Nothing provided reproduces the SSA baseline
-    profile: {age: 40, sex: male}
-    expect:
-      remaining_life_expectancy: {value: 38.5795, tolerance: 0.001}
-      combined_hazard_ratio: {value: 1, tolerance: 0.000001}
-  - name: Never smoked, BMI 23, 200 minutes of exercise, male aged 40
-    profile: {age: 40, sex: male, smoking_status: never, bmi: 23, mvpa_minutes_per_week: 200}
-    expect:
-      remaining_life_expectancy: {value: 47.2914, tolerance: 0.001}
-      median_age_at_death: {value: 89.9394, tolerance: 0.001}
-      combined_hazard_ratio: {value: 0.4349, tolerance: 0.0001}
-  - name: Current smoker, BMI 36, no exercise, male aged 40
-    profile: {age: 40, sex: male, smoking_status: current, bmi: 36, mvpa_minutes_per_week: 0}
-    expect:
-      remaining_life_expectancy: {value: 25.3023, tolerance: 0.001}
-      survival_to_80: {value: 0.1122, tolerance: 0.0001}
-      combined_hazard_ratio: {value: 3.5094, tolerance: 0.0001}
-  - name: Quit smoking at 45-54, BMI 27, 300 minutes, female aged 60
-    profile: {age: 60, sex: female, smoking_status: former_quit_45_54, bmi: 27, mvpa_minutes_per_week: 300}
-    expect:
-      remaining_life_expectancy: {value: 28.1445, tolerance: 0.001}
-      survival_to_90: {value: 0.4852, tolerance: 0.0001}
-      survival_to_100: {value: 0.0991, tolerance: 0.0001}
+    - id: pm25
+      label: Air pollution
+      input: pm25
+      type: banded
+      missing: neutral
+      source: demo
+      bands:
+        - {max: 10, hazard_ratio: 1.0, prevalence: 0.7}
+        - {min: 10, max: 20, hazard_ratio: 1.08, prevalence: 0.25}
+        - {min: 20, hazard_ratio: 1.17, prevalence: 0.05}
+    - id: commute
+      label: Commute
+      input: commute
+      type: categorical
+      missing: neutral
+      source: demo
+      levels:
+        - {value: car, hazard_ratio: 1.0, prevalence: 0.9}
+        - {value: active, hazard_ratio: 0.9, prevalence: 0.1}

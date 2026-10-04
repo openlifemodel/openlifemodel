@@ -6,6 +6,7 @@ import {
   parseModel,
   runReferenceTests,
   serializeModel,
+  validateModel,
   type OlmModel,
 } from "../src/index.ts";
 
@@ -190,5 +191,133 @@ describe("validation", () => {
     const factor = model.adjustment!.factors[0]!;
     if (factor.type === "categorical") factor.levels = factor.levels.filter((l) => l.value !== "current");
     expect(errorsFor(model).join()).toMatch(/no level for "current"/);
+  });
+});
+
+describe("spec examples", () => {
+  const examplesDir = new URL("../../spec/examples/", import.meta.url);
+  it.each(readdirSync(examplesDir).filter((f) => f.endsWith(".olm.yaml")))("%s is a valid model", (file) => {
+    const model = load(file, examplesDir);
+    expect(model.inputs?.length ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("custom inputs (OLM 0.2)", () => {
+  const ssa = load("us-ssa-2023-period.olm.yaml");
+  const withCustom = (): OlmModel => ({
+    ...structuredClone(ssa),
+    olm: "0.2",
+    id: "pollution-example",
+    tests: [],
+    sources: [...ssa.sources, { id: "example", citation: "Example values for tests." }],
+    inputs: [
+      { id: "pm25", label: "Air pollution", question: "Average PM2.5 where you live", type: "number", unit: "µg/m³", min: 0, max: 200 },
+      {
+        id: "commute",
+        label: "Commute",
+        type: "choice",
+        choices: [
+          { value: "car", label: "Car" },
+          { value: "active", label: "Walk or cycle" },
+        ],
+      },
+    ],
+    adjustment: {
+      method: "proportional-hazards",
+      normalization: "population-average",
+      factors: [
+        {
+          id: "pm25",
+          label: "Air pollution",
+          input: "pm25",
+          type: "banded",
+          missing: "neutral",
+          source: "example",
+          bands: [
+            { max: 10, hazard_ratio: 1, prevalence: 0.6 },
+            { min: 10, hazard_ratio: 1.1, prevalence: 0.4 },
+          ],
+        },
+        {
+          id: "commute",
+          label: "Commute",
+          input: "commute",
+          type: "categorical",
+          missing: "neutral",
+          source: "example",
+          levels: [
+            { value: "car", hazard_ratio: 1, prevalence: 0.8 },
+            { value: "active", hazard_ratio: 0.9, prevalence: 0.2 },
+          ],
+        },
+      ],
+    },
+  });
+  const errorsFor = (model: OlmModel): string[] => {
+    try {
+      validateModel(structuredClone(model));
+      return [];
+    } catch (err) {
+      return (err as OlmValidationError).errors;
+    }
+  };
+
+  it("accepts a model with custom number and choice inputs", () => {
+    expect(errorsFor(withCustom())).toEqual([]);
+    expect(parseModel(serializeModel(withCustom())).inputs).toHaveLength(2);
+  });
+
+  it("uses custom answers in the calculation", () => {
+    const model = validateModel(withCustom());
+    const clean = calculate(model, { age: 40, sex: "female", custom: { pm25: 5, commute: "active" } });
+    const dirty = calculate(model, { age: 40, sex: "female", custom: { pm25: 30, commute: "car" } });
+    expect(clean.remaining_life_expectancy).toBeGreaterThan(dirty.remaining_life_expectancy);
+    const pm = clean.factors.find((f) => f.id === "pm25")!;
+    expect(pm.value).toBe(5);
+    expect(pm.best_levels).toEqual([{ max: 10 }]);
+  });
+
+  it("treats a missing custom answer as average", () => {
+    const model = validateModel(withCustom());
+    const result = calculate(model, { age: 40, sex: "female" });
+    expect(result.combined_hazard_ratio).toBeCloseTo(1, 10);
+    expect(result.warnings).toHaveLength(2);
+  });
+
+  it("rejects custom answers that are out of range, wrong, or unknown", () => {
+    const model = validateModel(withCustom());
+    expect(() => calculate(model, { age: 40, sex: "male", custom: { pm25: 500 } })).toThrow(/between 0 and 200/);
+    expect(() => calculate(model, { age: 40, sex: "male", custom: { commute: "boat" } })).toThrow(/one of: car, active/);
+    expect(() => calculate(model, { age: 40, sex: "male", custom: { radon: 3 } })).toThrow(/not an input of this model/);
+  });
+
+  it("rejects factors that read an undeclared input", () => {
+    const model = withCustom();
+    model.inputs = model.inputs!.filter((i) => i.id !== "pm25");
+    expect(errorsFor(model).join()).toMatch(/neither a standard input nor declared/);
+  });
+
+  it("rejects custom inputs that shadow standard ones or go unused", () => {
+    const model = withCustom();
+    model.inputs!.push({ id: "bmi", label: "BMI", type: "number", unit: "kg/m²", min: 10, max: 80 });
+    model.inputs!.push({ id: "radon", label: "Radon", type: "number", unit: "Bq/m³", min: 0, max: 1000 });
+    const errors = errorsFor(model).join();
+    expect(errors).toMatch(/same id as a standard input/);
+    expect(errors).toMatch(/"radon" is declared but no factor uses it/);
+  });
+
+  it("requires a categorical custom factor to cover exactly its choices", () => {
+    const model = withCustom();
+    const factor = model.adjustment!.factors[1]!;
+    if (factor.type === "categorical") factor.levels[1]!.value = "bike";
+    const errors = errorsFor(model).join();
+    expect(errors).toMatch(/no level for "active"/);
+    expect(errors).toMatch(/unknown level "bike"/);
+  });
+
+  it("limits the length of text that a calculator displays", () => {
+    const model = withCustom();
+    model.inputs![0]!.label = "x".repeat(41);
+    expect(errorsFor(model).join()).toMatch(/must NOT have more than 40 characters/);
   });
 });

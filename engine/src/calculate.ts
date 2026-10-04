@@ -7,7 +7,7 @@ import type {
   PersonProfile,
   SurvivalPoint,
 } from "./types.ts";
-import { OlmValidationError, validateProfile } from "./validate.ts";
+import { customValueErrors, OlmValidationError, STANDARD_INPUTS, validateProfile } from "./validate.ts";
 
 // The method is described in spec/OLM-SPEC.md ("Calculation"). In short:
 // each life-table year has a constant force of mortality mu = -ln(1 - qx),
@@ -94,9 +94,17 @@ function populationMean(factor: Factor): number {
   return entries.reduce((sum, e) => sum + (e.prevalence ?? 0) * e.hazard_ratio, 0);
 }
 
+/** A factor's input value: a standard profile field, or an answer to a custom input. */
+function readInput(profile: PersonProfile, input: string): string | number | null {
+  if (STANDARD_INPUTS.has(input)) return (profile[input as keyof PersonProfile] as string | number | undefined) ?? null;
+  return profile.custom?.[input] ?? null;
+}
+
 /** Run a model against a profile. Throws OlmValidationError for invalid or unsupported profiles. */
 export function calculate(model: OlmModel, input: unknown): CalculationResult {
   const profile: PersonProfile = validateProfile(input);
+  const customErrors = customValueErrors(model, profile);
+  if (customErrors.length > 0) throw new OlmValidationError("profile", customErrors);
   const { start_age: startAge } = model.baseline;
   const qx = model.baseline.qx[profile.sex];
   if (!qx) throw new OlmValidationError("profile", [`model "${model.id}" has no baseline for sex "${profile.sex}"`]);
@@ -110,7 +118,7 @@ export function calculate(model: OlmModel, input: unknown): CalculationResult {
   const adjustment = model.adjustment;
   const factorHrs: { factor: Factor; value: string | number | null; hr: number }[] = [];
   for (const factor of adjustment?.factors ?? []) {
-    const value = profile[factor.input] ?? null;
+    const value = readInput(profile, factor.input);
     if (value === null) {
       if (factor.missing === "required") {
         throw new OlmValidationError("profile", [`"${factor.input}" is required by this model`]);

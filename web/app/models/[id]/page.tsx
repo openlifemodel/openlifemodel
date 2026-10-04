@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { Factor } from "@openlifemodel/engine";
+import type { Factor, OlmModel } from "@openlifemodel/engine";
 import { bundledModel, bundledModels } from "@/lib/models";
-import { LEVEL_LABELS } from "@/lib/labels";
+import { levelLabel } from "@/lib/labels";
 import { REPO_URL } from "@/lib/site";
 
 export const dynamicParams = false;
@@ -25,9 +25,9 @@ const STATUS_TEXT = {
   published: "Published: reproduces an authoritative published source.",
 } as const;
 
-function levelRows(factor: Factor) {
+function levelRows(model: OlmModel, factor: Factor) {
   return factor.type === "categorical"
-    ? factor.levels.map((l) => [LEVEL_LABELS[l.value] ?? l.value, l.hazard_ratio, l.prevalence] as const)
+    ? factor.levels.map((l) => [levelLabel(model, factor, l.value), l.hazard_ratio, l.prevalence] as const)
     : factor.bands.map(
         (b) =>
           [
@@ -80,6 +80,24 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
         </>
       )}
 
+      {model.inputs && model.inputs.length > 0 && (
+        <>
+          <h2>Questions this model asks</h2>
+          <p>In addition to the standard profile questions, this model declares its own inputs:</p>
+          <ul>
+            {model.inputs.map((i) => (
+              <li key={i.id}>
+                <strong>{i.question ?? i.label}</strong>{" "}
+                {i.type === "number"
+                  ? `(${i.min}–${i.max} ${i.unit ?? ""})`
+                  : `(${(i.choices ?? []).map((c) => c.label).join(", ")})`}
+                {i.help && <> {i.help}</>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <h2>Baseline</h2>
       <p>
         Period life table from age {model.baseline.start_age}, for{" "}
@@ -107,7 +125,7 @@ export default async function ModelPage({ params }: PageProps<"/models/[id]">) {
                   </tr>
                 </thead>
                 <tbody>
-                  {levelRows(factor).map(([label, hr, prevalence]) => (
+                  {levelRows(model, factor).map(([label, hr, prevalence]) => (
                     <tr key={label} className="border-t" style={{ borderColor: "var(--border)" }}>
                       <td className="py-1">{label}</td>
                       <td className="py-1 tabular-nums">{hr}</td>

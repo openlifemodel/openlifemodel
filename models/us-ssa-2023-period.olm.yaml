@@ -1,5 +1,5 @@
-# OLM 0.1 model file. Specification: spec/OLM-SPEC.md
-olm: "0.1"
+# OLM 0.2 model file. Specification: spec/OLM-SPEC.md
+olm: "0.2"
 id: us-ssa-2023-period
 name: US population baseline (SSA 2023 period life table)
 version: 1.0.0
