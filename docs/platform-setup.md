@@ -44,6 +44,10 @@ as any change to it. No secrets, IP addresses or account IDs here.
   unprivileged nginx on port 8080. CI builds and smoke-tests the image.
 - The reference calculator runs entirely in the browser; no server receives
   user health data.
+- Analytics: Cloudflare Web Analytics (RUM) on `openlifemodel.com`, with the
+  beacon injected automatically at Cloudflare's edge (not in the code), for
+  all regions. It sets no cookies and records page, referrer, country and
+  performance only. Self-hosted copies do not include it.
 - A Hetzner Cloud server (Helsinki) is reserved for the later hosted product
   and is not in use.
 

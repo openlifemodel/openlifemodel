@@ -87,7 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <p className="max-w-md leading-relaxed">
                 Experimental. Results are educational statistical estimates, not medical advice or a
-                prediction of any individual&apos;s lifespan. Your inputs never leave your browser.
+                prediction of any individual&apos;s lifespan. This site never sends your answers to a server.
               </p>
             </div>
             <div className="space-y-2">
@@ -107,6 +107,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href={REPO_URL} className="block hover:text-fg">
                 Source code (Apache-2.0)
               </a>
+              <Link href="/privacy/" className="block hover:text-fg">
+                Privacy
+              </Link>
               <a href="mailto:info@openlifemodel.com" className="block hover:text-fg">
                 info@openlifemodel.com
               </a>

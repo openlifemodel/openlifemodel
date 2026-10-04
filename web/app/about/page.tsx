@@ -74,9 +74,10 @@ export default function About() {
 
       <h2>Your privacy</h2>
       <p>
-        The calculator runs entirely in your browser. Your answers are not sent to any server; they
-        are remembered only in this browser so you do not have to retype them. There are no
-        accounts, no analytics cookies and no tracking.
+        The calculator runs in your browser, and this site never sends your answers to a server;
+        they are remembered only in this browser so you do not have to retype them. There are no
+        accounts and no cookies. We count visits with cookieless Cloudflare Web Analytics, which
+        never sees what you enter. Details are on the <Link href="/privacy/">privacy page</Link>.
       </p>
 
       <h2>Open models, open format</h2>
